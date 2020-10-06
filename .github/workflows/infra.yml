@@ -81,8 +81,9 @@ jobs:
           Set-Content -Path $userDataPath  -Value $newUserData
         }
         
-        Update-VM_UserData -fileName VM_UserData.ps1
-        Update-VM_UserData -fileName VM_UserData_SQL.ps1
+        Update-VM_UserData -fileName VM_UserData_DbJumpbox.ps1
+        Update-VM_UserData -fileName VM_UserData_DbServer.ps1
+        Update-VM_UserData -fileName VM_UserData_WebServer.ps1
         
       shell: powershell  
 
