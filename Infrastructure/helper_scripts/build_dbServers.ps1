@@ -39,8 +39,6 @@ $dbJumpboxRole = "$rolePrefix-DbJumpbox"
 
 $acceptableStates = @("pending", "running")
 
-$dbIpAddress = ""
-
 # Helper function to read and encoding the VM startup scripts
 Function Get-UserData {
     param (
@@ -164,6 +162,14 @@ else {
 Write-Output "      $time seconds | Waiting for instances to start... (This normally takes about 30 seconds.)"
 
 $allRunning = $false
+$vms = New-Object System.Data.Datatable
+[void]$vms.Columns.Add("ip")
+[void]$vms.Columns.Add("role")
+[void]$vms.Columns.Add("sql_running")
+[void]$vms.Columns.Add("sql_logins")
+[void]$vms.Columns.Add("iis_running")
+[void]$vms.Columns.Add("v")
+
 While (-not $allRunning){
     
     $dbServerInstances = (Get-EC2Instance -Filter @{Name="tag:$dbServerRole";Values=$tagValue}, @{Name="instance-state-name";Values="running"}).Instances
@@ -181,12 +187,24 @@ While (-not $allRunning){
 
     if ($NumRunning -eq ($numWebServers + 2)){
         $allRunning = $true
+        
+        # Logging all the IP addresses
         Write-Output "      $time seconds | All instances are running!"
-        $dbIpAddress = $dbServerInstances[0].PublicIpAddress
         ForEach ($instance in $runningInstances){
             $id = $instance.InstanceId
             $ipAddress = $instance.PublicIpAddress
             Write-Output "        Instance $id is available at the public IP: $ipAddress"
+        }
+
+        # Populating our table of VMs
+        ForEach ($instance in $dbServerInstances){
+            [void]$vms.Rows.Add($instance.PublicIpAddress,$dbServerRole,$false,$false,$null,$null)
+        }
+        ForEach ($instance in $dbJumpboxInstances){
+            [void]$vms.Rows.Add($instance.PublicIpAddress,$dbJumpboxRole,$null,$null,$null,$false)
+        }
+        ForEach ($instance in $webServerInstances){
+            [void]$vms.Rows.Add($instance.PublicIpAddress,$webServerRole,$null,$null,$false,$false)
         }
         break
     }
@@ -211,10 +229,11 @@ Write-Output "      $time seconds | Waiting for instances to become responsive..
 # Helper functions to ping the instances
 function Test-SQL {
     param (
+        $ip,
         $cred
     )
     try { 
-        Invoke-DbaQuery -SqlInstance $dbIpAddress -Query 'SELECT @@version' -SqlCredential $cred -EnableException
+        Invoke-DbaQuery -SqlInstance $ip -Query 'SELECT @@version' -SqlCredential $cred -EnableException
     }
     catch {
         return $false
@@ -223,7 +242,18 @@ function Test-SQL {
 }
 
 function Test-IIS {
-    Write-Warning "TO DO: Write a Test-IIS function!"
+    param (
+        $ip
+    )
+    try { 
+        $content = Invoke-WebRequest -Uri $ip -TimeoutSec 1 -UseBasicParsing
+    }
+    catch {
+        return $false
+    }
+    if ($content.toString() -like "*iisstart.png*"){
+    return $true
+    }
 }
 
 function Get-Tentacles {
@@ -237,13 +267,8 @@ function Get-Tentacles {
 Write-Warning "Consider creating a hashtable or something for all websevers to keep track of IIS/tentacles etc"
 
 # Waiting to see if they all come online
-$allListening = $false
+$allVmsConfigured = $false
 $runningWarningGiven = $false
-$SqlOnline = $false
-$LoginsDeployed = $false
-$JumpboxListening = $false
-$IssInstalls = 0
-$WebServersListening = 0
 
 $saPassword = $OctopusParameters["sqlSaPassword"] | ConvertTo-SecureString -AsPlainText -Force
 $saUsername = "sa"
@@ -253,46 +278,80 @@ $octoUsername = "octopus"
 $octoPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
 $octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $octoUsername, $octoPassword
 
-While (-not $allListening){
-    if (-not $SqlOnline){
-        $SqlOnline = Test-SQL -cred $saCred
-    }
-    if (-not $LoginsDeployed){
-        $LoginsDeployed = Test-SQL -cred $octoCred
-    }
-    if (-not $JumpboxListening){
-        $jumpboxes = Get-Tentacles -role $dbJumpboxRole
-        if ($jumpboxes.count = 1){
-            $JumpboxListening = $true
+While (-not $allVmsConfigured){
+ 
+
+    # Checking whether anything new has come online
+    ## SQL Server
+    $pendingSqlVms = $vms.Select("sql_running like '$false'")
+    forEach ($ip in $pendingSqlVms.ip){
+        $sqlDeployed = Test-SQL -ip $ip -cred $saCred
+        if ($sqlDeployed){
+            Write-Output "    SQL Server is running on: $ip"
+            $thisVm = $vms.Select("ip like '$ip'")
+            $thisVm.sql_running = $true
         }
     }
-    if ($IssInstalls -lt $numWebServers){
-        Write-Warning "To do: Figute out how to check IIS on all the web servers!"
-    }
-    if ($WebServersListening -lt $numWebServers){
-        $webServers = Get-Tentacles -role $webServerRole
-        if ($webServers.count -gt $WebServersListening){
-            Write-Warning "To do: Log which web server just came online!"
-            $WebServersListening = $webServers.count
+    
+    ## SQL Logins
+    $pendingSqlLogins = $vms.Select("sql_logins like '$false'")
+    forEach ($ip in $pendingSqlLogins.ip){
+        $loginsDeployed = Test-SQL -ip $ip -cred $octoCred
+        if ($loginsDeployed){
+            Write-Output "    SQL Server Logins deployed to: $ip"
+            $thisVm = $vms.Select("ip like '$ip'")
+            $thisVm.sql_logins = $true
         }
     }
 
+    ## IIS
+    $pendingIisInstalls = $vms.Select("iis_running like '$false'")
+    forEach ($ip in $pendingIisInstalls.ip){
+        $iisDeployed = Test-IIS -ip $ip
+        if ($iisDeployed){
+            Write-Output "    IIS is running on: $ip"
+            $thisVm = $vms.Select("ip like '$ip'")
+            $thisVm.iis_running = $true
+        }
+    }
 
+    ## Tentacles
+    $pendingTentacles = $vms.Select("tentacle_listening like '$false'")
+    forEach ($ip in $pendingTentacles.ip){
+        $tentacleDeployed = Test-IIS -ip $ip
+        if ($tentacleDeployed){
+            Write-Output "    Octopus Tentacle is listening on: $ip"
+            $thisVm = $vms.Select("ip like '$ip'")
+            $thisVm.tentacle_listening = $true
+        }
+    }
+
+    # Checking if there is anything left that needs to be configured on any VMs
+    $allVmsConfigured = $true
+    ForEach ($vm in $vms){
+        if ($vm.ItemArray -contains "False"){
+            $allVmsConfigured = $false
+        }
+    }
+
+    # Getting the time
     $time = $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
-    Write-Output "$time seconds | SQL- Installed: $SqlOnline, Logins: $LoginsDeployed, Jumpbox: $JumpboxListening | WEB- IIS: $IssInstalls, Tentacles: $WebServersListening"
-                 #Extracting package 'C:\Octopus\Tentacle\Files\RandomQuotes_SQL_infra@S0.0.53@7F26AF5DA0AB8B4FB2F4A449E5F141C3.nupkg' to 
-    if (($time -gt 60) -and (-not $runningWarningGiven)){
+
+    if (-not $allVmsConfigured){
+        Write-Warning "    $time seconds | Waiting for all machines to come online."
+    }
+    
+    if ($allVmsConfigured){
+        Write-Output "SUCCESS! Environment built successfully."
+        break
+    }
+    if (($time -gt 600) -and (-not $runningWarningGiven)){
         Write-Warning "EC2 instances are taking an unusually long time to start."
         $runningWarningGiven = $true
     }
-    if ($time -gt $timeout){
+
+    if (($time -gt $timeout)-and (-not $allVmsConfigured)){
         Write-Error "Timed out at $time seconds. Timeout currently set to $timeout seconds. There is a parameter on this script to adjust the default timeout."
-    }    
-    
-    if (( $LoginsDeployed -and $JumpboxListening) -and ($WebServersListening -eq $WebServersListening)){
-        $allListening = $true
-        Write-Output "SUCCESS! Environment built successfully. SQL Server IP address is: $dbIpAddress"
-        break
-    }
+    }   
     Start-Sleep -s 15
 }
