@@ -37,8 +37,6 @@ $webServerRole = "$rolePrefix-WebServer"
 $dbServerRole = "$rolePrefix-DbServer"
 $dbJumpboxRole = "$rolePrefix-DbJumpbox"
 
-$acceptableStates = @("pending", "running")
-
 # Helper function to read and encoding the VM startup scripts
 Function Get-UserData {
     param (
@@ -70,29 +68,33 @@ $webServerUserData = Get-UserData -fileName "VM_UserData_WebServer.ps1" -role $w
 $dbServerUserData = Get-UserData -fileName "VM_UserData_DbServer.ps1" -role $dbServerRole
 $jumpServerUserData = Get-UserData -fileName "VM_UserData_DbJumpbox.ps1" -role $dbJumpboxRole
 
-# Helper function to check if server already exists
-Function Test-Server {
+# Helper function to get all the existing servers of a particular role
+Function Get-Servers {
     param (
         $role,
-        $value = $tagValue
+        $value = $tagValue,
+        [switch]$includePending
     )
-    $instances = (Get-EC2Instance -Filter @{Name="tag:$role";Values=$value}, @{Name="instance-state-name";Values=$acceptableStates}).Instances 
-    if ($instances.count -eq 0){
-        return $true
+    $acceptableStates = "running"
+    if($includePending){
+        $acceptableStates = @("pending", "running")
     }
-    return $false
+    $instances = (Get-EC2Instance -Filter @{Name="tag:$role";Values=$value}, @{Name="instance-state-name";Values=$acceptableStates}).Instances 
+    return $instances
 }
 
-# Helper function to build a server if it doesn't already exist
-Function Build-Server {
+# Helper function to build any servers that don't already exist
+Function Build-Servers {
     param (
         $role,
         $value = $tagValue,
         $encodedUserData,
         $count = 1
     )
-    if (Test-Server $dbServerRole){
-        $NewInstance = New-EC2Instance -ImageId $ami -MinCount $count -MaxCount 1 -InstanceType $instanceType -UserData $encodedUserData -KeyName RandomQuotes_SQL -SecurityGroup RandomQuotes_SQL -IamInstanceProfile_Name RandomQuotes_SQL
+    $existingServers = Get-Servers -role $role -value $value -includePending
+    $required = $count - $existingServers.count
+    if ($required -gt 0){
+        $NewInstance = New-EC2Instance -ImageId $ami -MinCount $required -MaxCount $required -InstanceType $instanceType -UserData $encodedUserData -KeyName RandomQuotes_SQL -SecurityGroup RandomQuotes_SQL -IamInstanceProfile_Name RandomQuotes_SQL
         # Tagging all the instances
         ForEach ($InstanceID  in ($NewInstance.Instances).InstanceId){
             New-EC2Tag -Resources $( $InstanceID ) -Tags @(
@@ -103,14 +105,17 @@ Function Build-Server {
 }
 
 # Building all the servers
-Build-Server -role $dbServerRole -encodedUserData $dbServerUserData
-Build-Server -role $dbJumpboxRole -encodedUserData $jumpServerUserData
-Build-Server -role $webServerRole -encodedUserData $webServerUserData -count $numWebServers
+Write-Output "Launching SQL Server"
+Build-Servers -role $dbServerRole -encodedUserData $dbServerUserData 
+Write-Output "Launching SQL Jumpbox"
+Build-Servers -role $dbJumpboxRole -encodedUserData $jumpServerUserData
+Write-Output "Launching Web Server(s)"
+Build-Servers -role $webServerRole -encodedUserData $webServerUserData -count $numWebServers
 
 # Checking all the instances
-$dbServerInstances = (Get-EC2Instance -Filter @{Name="tag:$dbServerRole";Values=$tagValue}, @{Name="instance-state-name";Values=$acceptableStates}).Instances
-$dbJumpboxInstances = (Get-EC2Instance -Filter @{Name="tag:$dbJumpboxRole";Values=$tagValue}, @{Name="instance-state-name";Values=$acceptableStates}).Instances
-$webServerInstances = (Get-EC2Instance -Filter @{Name="tag:$webServerRole";Values=$tagValue}, @{Name="instance-state-name";Values=$acceptableStates}).Instances
+$dbServerInstances = Get-Servers -role $dbServerRole -includePending
+$dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
+$webServerInstances = Get-Servers -role $webServerRole -includePending
 
 # Logging all the instance details
 Write-Output "    Verifying SQL Server instance: "
@@ -159,7 +164,7 @@ else {
     Write-Output "    All instances launched successfully!"
 }
 
-Write-Output "      $time seconds | Waiting for instances to start... (This normally takes about 30 seconds.)"
+Write-Output "      Waiting for instances to start... (This normally takes about 30 seconds.)"
 
 $allRunning = $false
 $vms = New-Object System.Data.Datatable
@@ -168,28 +173,26 @@ $vms = New-Object System.Data.Datatable
 [void]$vms.Columns.Add("sql_running")
 [void]$vms.Columns.Add("sql_logins")
 [void]$vms.Columns.Add("iis_running")
-[void]$vms.Columns.Add("v")
+[void]$vms.Columns.Add("tentacle_listening")
 
 While (-not $allRunning){
     
-    $dbServerInstances = (Get-EC2Instance -Filter @{Name="tag:$dbServerRole";Values=$tagValue}, @{Name="instance-state-name";Values="running"}).Instances
-    $dbJumpboxInstances = (Get-EC2Instance -Filter @{Name="tag:$dbJumpboxRole";Values=$tagValue}, @{Name="instance-state-name";Values="running"}).Instances
-    $webServerInstances = (Get-EC2Instance -Filter @{Name="tag:$webServerRole";Values=$tagValue}, @{Name="instance-state-name";Values="running"}).Instances
-    
+    $runningDbServerInstances = Get-Servers -role $dbServerRole
+    $runningDbJumpboxInstances = Get-Servers -role $dbJumpboxRole
+    $runningWebServerInstances = Get-Servers -role $webServerRole
+
     $allInstances = @()
-    $allInstances += $dbServerInstances 
-    $allInstances += $dbJumpboxInstances 
-    $allInstances += $webServerInstances 
+    $allInstances += $runningDbServerInstances 
+    $allInstances += $runningDbJumpboxInstances 
+    $allInstances += $runningWebServerInstances 
 
     $NumRunning = $allInstances.count
-    
-    $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
 
     if ($NumRunning -eq ($numWebServers + 2)){
         $allRunning = $true
         
         # Logging all the IP addresses
-        Write-Output "      $time seconds | All instances are running!"
+        Write-Output "      All instances are running!"
         ForEach ($instance in $runningInstances){
             $id = $instance.InstanceId
             $ipAddress = $instance.PublicIpAddress
@@ -209,7 +212,7 @@ While (-not $allRunning){
         break
     }
     else {
-        Write-Output "      $time seconds | $NumRunning out of $numWebServers instances are running."
+        Write-Output "      $NumRunning out of $numWebServers instances are running."
     }
     Start-Sleep -s 15
 }
@@ -264,18 +267,27 @@ function Get-Tentacles {
     Write-Warning "TO DO: Write a Get-Tentacles function!"
 }
 
-Write-Warning "Consider creating a hashtable or something for all websevers to keep track of IIS/tentacles etc"
-
 # Waiting to see if they all come online
 $allVmsConfigured = $false
 $runningWarningGiven = $false
 
-$saPassword = $OctopusParameters["sqlSaPassword"] | ConvertTo-SecureString -AsPlainText -Force
+Write-Warning "Remove the hardcoded passwords!"
 $saUsername = "sa"
+try {
+    $saPassword = $OctopusParameters["sqlSaPassword"] | ConvertTo-SecureString -AsPlainText -Force
+}
+catch {
+    $saPassword = "S4fePa55word!!!" | ConvertTo-SecureString -AsPlainText -Force
+}
 $saCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $saUsername, $saPassword
 
 $octoUsername = "octopus"
-$octoPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
+try {
+    $octoPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
+}
+catch {
+    $octoPassword = "5re4lsoRocks" | ConvertTo-SecureString -AsPlainText -Force
+}
 $octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $octoUsername, $octoPassword
 
 While (-not $allVmsConfigured){
@@ -335,10 +347,10 @@ While (-not $allVmsConfigured){
     }
 
     # Getting the time
-    $time = $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
+    $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
 
     if (-not $allVmsConfigured){
-        Write-Warning "    $time seconds | Waiting for all machines to come online."
+        Write-Output "    Waiting for all machines to come online."
     }
     
     if ($allVmsConfigured){
@@ -351,7 +363,7 @@ While (-not $allVmsConfigured){
     }
 
     if (($time -gt $timeout)-and (-not $allVmsConfigured)){
-        Write-Error "Timed out at $time seconds. Timeout currently set to $timeout seconds. There is a parameter on this script to adjust the default timeout."
+        Write-Error "Timed out. Timeout currently set to $timeout seconds. There is a parameter on this script to adjust the default timeout."
     }   
-    Start-Sleep -s 15
+    Start-Sleep -s 10
 }
