@@ -236,7 +236,7 @@ function Test-SQL {
         $cred
     )
     try { 
-        Invoke-DbaQuery -SqlInstance $ip -Query 'SELECT @@version' -SqlCredential $cred -EnableException
+        Invoke-DbaQuery -SqlInstance $ip -Query 'SELECT @@version' -SqlCredential $cred -EnableException -QueryTimeout 1
     }
     catch {
         return $false
@@ -261,10 +261,9 @@ function Test-IIS {
 
 function Get-Tentacles {
     param (
-        $role
+        $ip
     )
-    Write-output "Role: $role"
-    Write-Warning "TO DO: Write a Get-Tentacles function!"
+    return $null
 }
 
 # Waiting to see if they all come online
@@ -291,8 +290,6 @@ catch {
 $octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $octoUsername, $octoPassword
 
 While (-not $allVmsConfigured){
- 
-
     # Checking whether anything new has come online
     ## SQL Server
     $pendingSqlVms = $vms.Select("sql_running like '$false'")
@@ -300,8 +297,8 @@ While (-not $allVmsConfigured){
         $sqlDeployed = Test-SQL -ip $ip -cred $saCred
         if ($sqlDeployed){
             Write-Output "    SQL Server is running on: $ip"
-            $thisVm = $vms.Select("ip like '$ip'")
-            $thisVm.sql_running = $true
+            $thisVm = ($vms.Select("ip = '$ip'"))
+            $thisVm[0]["sql_running"] = $true
         }
     }
     
@@ -311,8 +308,8 @@ While (-not $allVmsConfigured){
         $loginsDeployed = Test-SQL -ip $ip -cred $octoCred
         if ($loginsDeployed){
             Write-Output "    SQL Server Logins deployed to: $ip"
-            $thisVm = $vms.Select("ip like '$ip'")
-            $thisVm.sql_logins = $true
+            $thisVm = ($vms.Select("ip = '$ip'"))
+            $thisVm[0]["sql_logins"] = $true
         }
     }
 
@@ -322,19 +319,20 @@ While (-not $allVmsConfigured){
         $iisDeployed = Test-IIS -ip $ip
         if ($iisDeployed){
             Write-Output "    IIS is running on: $ip"
-            $thisVm = $vms.Select("ip like '$ip'")
-            $thisVm.iis_running = $true
+            $thisVm = ($vms.Select("ip = '$ip'"))
+            $thisVm[0]["iis_running"] = $true
         }
     }
 
     ## Tentacles
     $pendingTentacles = $vms.Select("tentacle_listening like '$false'")
     forEach ($ip in $pendingTentacles.ip){
-        $tentacleDeployed = Test-IIS -ip $ip
-        if ($tentacleDeployed){
+        Write-Warning "To do, test the tentacle on: $ip"
+        $tentacleDeployed = Get-Tentacles -ip $ip
+        if ($false){ # TO DO: - Tidy this up
             Write-Output "    Octopus Tentacle is listening on: $ip"
-            $thisVm = $vms.Select("ip like '$ip'")
-            $thisVm.tentacle_listening = $true
+            $thisVm = ($vms.Select("ip = '$ip'"))
+            $thisVm[0]["tentacle_listening"] = $true
         }
     }
 
