@@ -108,18 +108,8 @@ Write-Output "  Parameters: -securityGroupName $securityGroupName"
 & $PSScriptRoot\helper_scripts\create_security_group.ps1 -securityGroupName $securityGroupName
 Write-Output "*"
 
-if ($DeployDbServer){
- # Creates the DB Server
-  Write-Output "Executing .\helper_scripts\build_dbServers.ps1..."
-  Write-Output "  Parameters: -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -Wait"
-  & $PSScriptRoot\helper_scripts\build_dbServers.ps1 -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -Wait
-  Write-Output "*"
-}
-
-if ($DeployWebServers){
-  # Creates the WebServers
-  Write-Output "Executing .\helper_scripts\build_webServers.ps1..."
-  Write-Output "  Parameters: -count $count -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -DeployTentacle:$DeployTentacle -Wait"
-  & $PSScriptRoot\helper_scripts\build_webServers.ps1 -count $count -instanceType $instanceType -ami $ami -tagValue $tagValue -octoUrl $octoUrl -octoEnv $octoEnv -DeployTentacle:$DeployTentacle -Wait
-  Write-Output "*"
-}
+# Deploys all the VMs
+Write-Output "Executing .\helper_scripts\build_dbServers.ps1..."
+Write-Output "  (No parameters)"
+& $PSScriptRoot\helper_scripts\build_dbServers.ps1
+Write-Output "*"
