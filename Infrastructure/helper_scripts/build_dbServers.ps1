@@ -14,7 +14,7 @@ try {
     $rolePrefix = $OctopusParameters["Octopus.Project.Name"]
 }
 catch {
-    $rolePrefix = "UnknownProject"
+    $rolePrefix = "RandomQuotes_SQL"
 }
 
 $tagValue= ""
@@ -22,7 +22,7 @@ try {
     $tagValue = $OctopusParameters["Octopus.Environment.Name"]
 }
 catch {
-    $tagValue = "EnvironmentUnknown"
+    $tagValue = "Dev"
 }
 
 $octoUrl= ""
@@ -30,7 +30,7 @@ try {
     $octoUrl = $OctopusParameters["Octopus.Web.BaseUrl"]
 }
 catch {
-    $octoUrl = "OctopusUrlUnknown"
+    $octoUrl = "https://dlmconsultants.octopus.app"
 }
 
 $webServerRole = "$rolePrefix-WebServer"
@@ -105,11 +105,11 @@ Function Build-Servers {
 }
 
 # Building all the servers
-Write-Output "Launching SQL Server"
+Write-Output "    Launching SQL Server"
 Build-Servers -role $dbServerRole -encodedUserData $dbServerUserData 
-Write-Output "Launching SQL Jumpbox"
+Write-Output "    Launching SQL Jumpbox"
 Build-Servers -role $dbJumpboxRole -encodedUserData $jumpServerUserData
-Write-Output "Launching Web Server(s)"
+Write-Output "    Launching Web Server(s)"
 Build-Servers -role $webServerRole -encodedUserData $webServerUserData -count $numWebServers
 
 # Checking all the instances
@@ -118,25 +118,23 @@ $dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
 $webServerInstances = Get-Servers -role $webServerRole -includePending
 
 # Logging all the instance details
-Write-Output "    Verifying SQL Server instance: "
+Write-Output "      Verifying instances: "
 ForEach ($instance in $dbServerInstances){
     $id = $instance.InstanceId
     $state = $instance.State.Name
-    Write-Output "      Instance $id is in state: $state"
+    Write-Output "        SQL Server $id is in state: $state"
 }
 
-Write-Output "    Verifying SQL Jumpbox instance: "
 ForEach ($instance in $dbJumpboxInstances){
     $id = $instance.InstanceId
     $state = $instance.State.Name
-    Write-Output "      Instance $id is in state: $state"
+    Write-Output "        SQL Jumpbox $id is in state: $state"
 }
 
-Write-Output "    Verifying Web Server instance(s): "
 ForEach ($instance in $webServerInstances){
     $id = $instance.InstanceId
     $state = $instance.State.Name
-    Write-Output "      Instance $id is in state: $state"
+    Write-Output "        Web server $id is in state: $state"
 }
 
 # Checking we've got all the right instances
@@ -200,11 +198,11 @@ While (-not $allRunning){
         Write-Output "      All instances are running!"
         Write-Output "        SQL Server: $sqlIp"
         Write-Output "        SQL Jumpox: $jumpIp"
-        Write-Output "        Web Servers: $webIps"
+        Write-Output "        Web Server(s): $webIps"
         break
     }
     else {
-        Write-Output "      $NumRunning out of $totalRequired instances are running."
+        Write-Output "        $NumRunning out of $totalRequired instances are running."
     }
     Start-Sleep -s 15
 }
@@ -300,6 +298,9 @@ catch {
 }
 $octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $octoUsername, $octoPassword
 
+$sqlDeployed = $false
+$loginsDeployed = $false
+
 While (-not $allVmsConfigured){
     # Checking whether anything new has come online
     ## SQL Server
@@ -307,7 +308,7 @@ While (-not $allVmsConfigured){
     forEach ($ip in $pendingSqlVms.ip){
         $sqlDeployed = Test-SQL -ip $ip -cred $saCred
         if ($sqlDeployed){
-            Write-Output "    SQL Server is running on: $ip"
+            Write-Output "      SQL Server is running on: $ip"
             $thisVm = ($vms.Select("ip = '$ip'"))
             $thisVm[0]["sql_running"] = $true
         }
@@ -318,7 +319,7 @@ While (-not $allVmsConfigured){
     forEach ($ip in $pendingSqlLogins.ip){
         $loginsDeployed = Test-SQL -ip $ip -cred $octoCred
         if ($loginsDeployed){
-            Write-Output "    SQL Server Logins deployed to: $ip"
+            Write-Output "      SQL Server Logins deployed to: $ip"
             $thisVm = ($vms.Select("ip = '$ip'"))
             $thisVm[0]["sql_logins"] = $true
         }
@@ -329,7 +330,7 @@ While (-not $allVmsConfigured){
     forEach ($ip in $pendingIisInstalls.ip){
         $iisDeployed = Test-IIS -ip $ip
         if ($iisDeployed){
-            Write-Output "    IIS is running on: $ip"
+            Write-Output "      IIS is running on: $ip"
             $thisVm = ($vms.Select("ip = '$ip'"))
             $thisVm[0]["iis_running"] = $true
         }
@@ -341,7 +342,7 @@ While (-not $allVmsConfigured){
         Write-Warning "To do, test the tentacle on: $ip"
         $tentacleDeployed = Get-Tentacles -ip $ip
         if ($false){ # TO DO: - Tidy this up
-            Write-Output "    Octopus Tentacle is listening on: $ip"
+            Write-Output "      Octopus Tentacle is listening on: $ip"
             $thisVm = ($vms.Select("ip = '$ip'"))
             $thisVm[0]["tentacle_listening"] = $true
         }
@@ -359,7 +360,32 @@ While (-not $allVmsConfigured){
     $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
 
     if (-not $allVmsConfigured){
-        Write-Output "    Waiting for all machines to come online."
+        # Working out the current status
+        ## SQL Server
+        $currentStatus = ""
+        if ($sqlDeployed){
+            $currentStatus = "SQL Server: Running,"
+        } 
+        else {
+            $currentStatus = "SQL Server: Pending,"
+        }
+        ## SQL Logins
+        if ($loginsDeployed){
+            $currentStatus = "$currentStatus SQL Logins: Deployed, "
+        } 
+        else {
+            $currentStatus = "$currentStatus SQL Logins: Pending, "
+        }
+        ## IIS
+        $vmsWithIis = ($vms.Select("iis_running = '$true'"))
+        $numIisInstalls = $vmsWithIis.count
+        $currentStatus = "$currentStatus IIS Installs: $numIisInstalls / $numWebServers, "
+        ## Tentacles
+        $vmsWithTentacles = ($vms.Select("tentacle_listening = '$true'"))
+        $numTentacles = $vmsWithTentacles.count
+        $tentaclesRequired = $numWebServers + 1 
+        $currentStatus = "$currentStatus Tentacles deployed: $numTentacles / $tentaclesRequired"
+        Write-Output "        $currentStatus"
     }
     
     if ($allVmsConfigured){
