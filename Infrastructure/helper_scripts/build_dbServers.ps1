@@ -8,6 +8,7 @@ param(
 $ErrorActionPreference = "Stop"
 $stopwatch =  [system.diagnostics.stopwatch]::StartNew()
 
+Write-Warning "To do, change the defaults to something generic!"
 # Initialising variables
 $rolePrefix= ""
 try {
@@ -53,7 +54,7 @@ Function Get-UserData {
     
     # replacing placeholder text
     $userData = $userData.replace("__OCTOPUSURL__",$octoUrl)
-    $userData = $userData.replace("__ENV__",$octoEnv)
+    $userData = $userData.replace("__ENV__",$tagValue)
     $userData = $userData.replace("__ROLE__",$role)
 
     # Base 64 encoding the userdata file (required by EC2)
