@@ -400,10 +400,10 @@ While (-not $allVmsConfigured){
         }
         ## SQL Logins
         if ($loginsDeployed){
-            $currentStatus = "$currentStatus SQL Logins: Deployed, "
+            $currentStatus = "$currentStatus SQL Logins: Deployed,"
         } 
         else {
-            $currentStatus = "$currentStatus SQL Logins: Pending, "
+            $currentStatus = "$currentStatus SQL Logins: Pending,"
         }
         ## IIS
         $vmsWithIis = ($vms.Select("iis_running = '$true'"))
