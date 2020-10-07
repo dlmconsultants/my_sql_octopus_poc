@@ -295,7 +295,7 @@ try {
     $octoPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
 }
 catch {
-    $octoPassword = "5re4lsoRocks" | ConvertTo-SecureString -AsPlainText -Force
+    $octoPassword = "5re4lsoRocks!" | ConvertTo-SecureString -AsPlainText -Force
 }
 $octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $octoUsername, $octoPassword
 
