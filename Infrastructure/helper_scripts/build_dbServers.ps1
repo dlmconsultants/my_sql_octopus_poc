@@ -167,52 +167,44 @@ else {
 Write-Output "      Waiting for instances to start... (This normally takes about 30 seconds.)"
 
 $allRunning = $false
-$vms = New-Object System.Data.Datatable
-[void]$vms.Columns.Add("ip")
-[void]$vms.Columns.Add("role")
-[void]$vms.Columns.Add("sql_running")
-[void]$vms.Columns.Add("sql_logins")
-[void]$vms.Columns.Add("iis_running")
-[void]$vms.Columns.Add("tentacle_listening")
+$runningDbServerInstances = @()
+$runningDbJumpboxInstances = @()
+$runningWebServerInstances = @()
 
 While (-not $allRunning){
-    
+    $totalRequired = $numWebServers + 2 # Web Servers + Jumpbox + SQL Server
+
     $runningDbServerInstances = Get-Servers -role $dbServerRole
     $runningDbJumpboxInstances = Get-Servers -role $dbJumpboxRole
     $runningWebServerInstances = Get-Servers -role $webServerRole
 
-    $allInstances = @()
-    $allInstances += $runningDbServerInstances 
-    $allInstances += $runningDbJumpboxInstances 
-    $allInstances += $runningWebServerInstances 
+    $NumRunning = $runningDbServerInstances.count +  $runningDbJumpboxInstances.count + $runningWebServerInstances.count
 
-    $NumRunning = $allInstances.count
-
-    if ($NumRunning -eq ($numWebServers + 2)){
+    if ($NumRunning -eq ($totalRequired)){
         $allRunning = $true
-        
+        $sqlIp = $runningDbServerInstances[0].PublicIpAddress
+        $jumpIp = $runningDbJumpboxInstances[0].PublicIpAddress
+
+        $webIps = ""
+        ForEach ($instance in $runningWebServerInstances){
+            $thisIp = $instance.PublicIpAddress
+            if ($webIps -like ""){
+                $webIps = "$thisIp" # The first IP address in the list
+            }
+            else {
+                $webIps = "$webIps, $thisIp" # All subsequent IP addresses
+            }
+        }
+
         # Logging all the IP addresses
         Write-Output "      All instances are running!"
-        ForEach ($instance in $runningInstances){
-            $id = $instance.InstanceId
-            $ipAddress = $instance.PublicIpAddress
-            Write-Output "        Instance $id is available at the public IP: $ipAddress"
-        }
-
-        # Populating our table of VMs
-        ForEach ($instance in $dbServerInstances){
-            [void]$vms.Rows.Add($instance.PublicIpAddress,$dbServerRole,$false,$false,$null,$null)
-        }
-        ForEach ($instance in $dbJumpboxInstances){
-            [void]$vms.Rows.Add($instance.PublicIpAddress,$dbJumpboxRole,$null,$null,$null,$false)
-        }
-        ForEach ($instance in $webServerInstances){
-            [void]$vms.Rows.Add($instance.PublicIpAddress,$webServerRole,$null,$null,$false,$false)
-        }
+        Write-Output "        SQL Server: $sqlIp"
+        Write-Output "        SQL Jumpox: $jumpIp"
+        Write-Output "        Web Servers: $webIps"
         break
     }
     else {
-        Write-Output "      $NumRunning out of $numWebServers instances are running."
+        Write-Output "      $NumRunning out of $totalRequired instances are running."
     }
     Start-Sleep -s 15
 }
@@ -227,7 +219,26 @@ catch {
     Install-Module dbatools -Force
 }
 
-Write-Output "      $time seconds | Waiting for instances to become responsive... (This normally takes about 5 minutes.)"
+# Populating our table of VMs
+$vms = New-Object System.Data.Datatable
+[void]$vms.Columns.Add("ip")
+[void]$vms.Columns.Add("role")
+[void]$vms.Columns.Add("sql_running")
+[void]$vms.Columns.Add("sql_logins")
+[void]$vms.Columns.Add("iis_running")
+[void]$vms.Columns.Add("tentacle_listening")
+
+ForEach ($instance in $runningDbServerInstances){
+    [void]$vms.Rows.Add($instance.PublicIpAddress,$dbServerRole,$false,$false,$null,$null)
+}
+ForEach ($instance in $runningDbJumpboxInstances){
+    [void]$vms.Rows.Add($instance.PublicIpAddress,$dbJumpboxRole,$null,$null,$null,$false)
+}
+ForEach ($instance in $runningWebServerInstances){
+    [void]$vms.Rows.Add($instance.PublicIpAddress,$webServerRole,$null,$null,$false,$false)
+}
+        
+Write-Output "      Waiting for all instances to complete setup... (This normally takes about 5 minutes.)"
 
 # Helper functions to ping the instances
 function Test-SQL {
