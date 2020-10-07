@@ -53,7 +53,6 @@ Get-Script -script "setup_dotnet_core.ps1"
 Write-Output "Executing ./setup_dotnet_core.ps1"
 ./setup_dotnet_core.ps1
 
-<# DEPLOY TENTACLE
 $octopusServerUrl = "__OCTOPUSURL__"
 $registerInEnvironments = "__ENV__"
 $registerInRoles = "__ROLE__"
@@ -62,7 +61,6 @@ Write-Output "*"
 Get-Script -script "install_tentacle.ps1"
 Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
 ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
-DEPLOY TENTACLE #>
 
 Write-Output "VM_UserData startup script completed..."
 </powershell>

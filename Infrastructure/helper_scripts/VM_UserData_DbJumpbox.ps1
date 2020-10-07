@@ -38,33 +38,26 @@ Function Get-Script{
   Invoke-WebRequest -Uri $uri -OutFile ".\$script" -Verbose
 }
 
-# Setting up users first, so that if anything goes wrong later, folks can RDP in to troubleshoot
 Write-Output "*"
 Get-Script -script "setup_users.ps1"
 Write-Output "Executing ./setup_users.ps1"
 ./setup_users.ps1
 
-# Chocolatey is required for both SQL Server and SSMS installs
+$octopusServerUrl = "__OCTOPUSURL__"
+$registerInEnvironments = "__ENV__"
+$registerInRoles = "__ROLE__"
+
+Write-Output "*"
+Get-Script -script "install_tentacle.ps1"
+Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
+./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
+
+# Installing SSMS for convenience (with Chocolatey). Not required to deploy anything so doing this last to avoid delays.
+
 Write-Output "*"
 Get-Script -script "install_choco.ps1"
 Write-Output "Executing ./install_choco.ps1"
 ./install_choco.ps1
-
-# Installing SQL Server, using a specific config file
-Write-Output "*"
-Write-Output "Downloading ConfigurationFile.ini and install_sql_with_choco.ps1"
-Get-Script -script "ConfigurationFile.ini"
-Get-Script -script "install_sql_server.ps1"
-Write-Output "Executing ./install_sql_server.ps1"
-./install_sql_server.ps1
-
-# Creating SQL logins so that student and octopus can both access SQL Server
-Write-Output "*"
-Get-Script -script "setup_sql_logins.ps1"
-Write-Output "Executing ./setup_sql_logins.ps1"
-./setup_sql_logins.ps1
-
-# Installing SSMS for convenience. Not required to deploy anything so doing this last to avoid delays.
 Write-Output "*"
 Get-Script -script "install_ssms.ps1"
 Write-Output "Executing ./install_ssms.ps1"
