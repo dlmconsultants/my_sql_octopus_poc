@@ -2,7 +2,8 @@ param(
     $instanceType = "t2.micro", # 1 vCPU, 1GiB Mem, free tier elligible: https://aws.amazon.com/ec2/instance-types/
     $ami = "ami-0d2455a34bf134234", # Microsoft Windows Server 2019 Base with Containers
     $numWebServers = 1,
-    $timeout = 4800 # seconds
+    $timeout = 4800, # seconds
+    $octoApiKey = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,7 +11,7 @@ $stopwatch =  [system.diagnostics.stopwatch]::StartNew()
 
 Write-Warning "To do, change the defaults to something generic!"
 # Initialising variables
-$rolePrefix= ""
+$rolePrefix = ""
 try {
     $rolePrefix = $OctopusParameters["Octopus.Project.Name"]
 }
@@ -18,7 +19,7 @@ catch {
     $rolePrefix = "RandomQuotes_SQL"
 }
 
-$tagValue= ""
+$tagValue = ""
 try {
     $tagValue = $OctopusParameters["Octopus.Environment.Name"]
 }
@@ -26,12 +27,29 @@ catch {
     $tagValue = "Dev"
 }
 
-$octoUrl= ""
+$octoUrl = ""
 try {
     $octoUrl = $OctopusParameters["Octopus.Web.BaseUrl"]
 }
 catch {
     $octoUrl = "https://dlmconsultants.octopus.app"
+}
+
+$envId = ""
+try {
+    $envId = $OctopusParameters["Octopus.Environment.Id"]
+}
+catch {
+    $envId = "Environments-1"
+}
+
+if ($octoApiKey -like ""){
+    try {
+        $octoApiKey = $OctopusParameters["API_KEY"]
+    }
+    catch {
+        Write-Error "Please provide your Octopus API Key!"
+    }
 }
 
 $webServerRole = "$rolePrefix-WebServer"
@@ -269,11 +287,22 @@ function Test-IIS {
     }
 }
 
-function Get-Tentacles {
+function Test-Tentacle {
     param (
         $ip
     )
-    return $null
+    $header = @{ "X-Octopus-ApiKey" = $octoApiKey }
+    $uri = "https://" + $ip + ":10933/"
+    $environmentMachines = "/api/Spaces-1/environments/$envId/machines"
+    $machines = ((Invoke-WebRequest ($octoUrl + $environmentMachines) -Headers $header -UseBasicParsing).content | ConvertFrom-Json).items
+    $uriList = @()
+    $uriList += $machines.Uri 
+    if ($uriList -contains $uri){
+        return $true
+    }
+    else {
+        return $false
+    }
 }
 
 # Waiting to see if they all come online
@@ -340,10 +369,9 @@ While (-not $allVmsConfigured){
     ## Tentacles
     $pendingTentacles = $vms.Select("tentacle_listening like '$false'")
     forEach ($ip in $pendingTentacles.ip){
-        Write-Warning "To do, test the tentacle on: $ip"
-        $tentacleDeployed = Get-Tentacles -ip $ip
-        if ($false){ # TO DO: - Tidy this up
-            Write-Output "      Octopus Tentacle is listening on: $ip"
+        $tentacleDeployed = Test-Tentacle -ip $ip
+        if ($tentacleDeployed){
+            Write-Output "      Tentacle is listening on: $ip"
             $thisVm = ($vms.Select("ip = '$ip'"))
             $thisVm[0]["tentacle_listening"] = $true
         }
