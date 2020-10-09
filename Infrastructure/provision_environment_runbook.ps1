@@ -26,9 +26,10 @@ $missingParams = @()
 if ($awsAccessKey -like ""){
     try {
         $awsAccessKey = $OctopusParameters["AWS_ACCOUNT.AccessKey"]
-        Write-Output "Found value for awsAccessKey from Octopus variables: $awsAccessKey" 
+        Write-Output "Found value for awsAccessKey from Octopus variables." 
     }
     catch {
+        Write-Warning "Did not find value for awsAccessKey from Octopus variables!" 
         $missingParams = $missingParams + "-awsAccessKey"
     }
 }
@@ -36,9 +37,10 @@ if ($awsAccessKey -like ""){
 if ($awsSecretKey -like ""){
     try {
         $awsSecretKey = $OctopusParameters["AWS_ACCOUNT.SecretKey"]
-        Write-Output "Found value for awsSecretKey from Octopus variables: $awsSecretKey" 
+        Write-Output "Found value for awsSecretKey from Octopus variables." 
     }
     catch {
+        Write-Warning "Did not find value for awsSecretKey from Octopus variables!" 
         $missingParams = $missingParams + "-awsSecretKey"
     }
 }
