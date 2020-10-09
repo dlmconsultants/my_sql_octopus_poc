@@ -135,7 +135,7 @@ Function Build-Servers {
         $required = 1
     )
     $existingServers = Get-Servers -role $role -value $value -includePending
-    $required = $count - $existingServers.count
+    $required = $numWebServers - $existingServers.count
     if ($required -gt 0){
         $NewInstance = New-EC2Instance -ImageId $ami -MinCount $required -MaxCount $required -InstanceType $instanceType -UserData $encodedUserData -KeyName RandomQuotes_SQL -SecurityGroup RandomQuotes_SQL -IamInstanceProfile_Name RandomQuotes_SQL
         # Tagging all the instances
