@@ -16,9 +16,12 @@ if ($awsAccessKey -like ""){
         Write-Output "Found value for awsAccessKey from Octopus variables." 
     }
     catch {
+        Write-Warning "Did not find value for awsAccessKey from Octopus variables!" 
         $missingParams = $missingParams + "-awsAccessKey"
     }
 }
+
+Write-Warning "Delete this logging - AWS Access Key is: $awsAccessKey"
 
 if ($awsSecretKey -like ""){
     try {
@@ -26,9 +29,12 @@ if ($awsSecretKey -like ""){
         Write-Output "Found value for awsSecretKey from Octopus variables." 
     }
     catch {
+        Write-Warning "Did not find value for awsSecretKey from Octopus variables!" 
         $missingParams = $missingParams + "-awsSecretKey"
     }
 }
+
+Write-Warning "Delete this logging - AWS Secret Key is: $awsSecretKey"
 
 if ($missingParams.Count -gt 0){
     $errorMessage = "Missing the following parameters: "
