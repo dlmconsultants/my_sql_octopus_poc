@@ -5,13 +5,15 @@ param(
     $timeout = 1800, # 30 minutes, in seconds
     $octoApiKey = "",
     $sqlSaPassword = "",
-    $sqlOctoPassword = ""
+    $sqlOctoPassword = "",
+    $octoUrl = "",
+    $envId = "",
+    $environment = "Manual run"
 )
 
 $ErrorActionPreference = "Stop"
 $stopwatch =  [system.diagnostics.stopwatch]::StartNew()
 
-Write-Warning "To do, change the defaults to something generic!"
 # Initialising variables
 $rolePrefix = ""
 try {
@@ -26,23 +28,25 @@ try {
     $tagValue = $OctopusParameters["Octopus.Environment.Name"]
 }
 catch {
-    $tagValue = "Dev"
+    $tagValue = $environment
 }
 
-$octoUrl = ""
-try {
-    $octoUrl = $OctopusParameters["Octopus.Web.ServerUri"]
-}
-catch {
-    $octoUrl = "https://dlmconsultants.octopus.app"
+if ($octoUrl -like ""){
+    try {
+        $octoUrl = $OctopusParameters["Octopus.Web.ServerUri"]
+    }
+    catch {
+        Write-Error "Please provide a value for -octoUrl"
+    }
 }
 
-$envId = ""
-try {
-    $envId = $OctopusParameters["Octopus.Environment.Id"]
-}
-catch {
-    $envId = "Environments-1"
+if ($envId = ""){
+    try {
+        $envId = $OctopusParameters["Octopus.Environment.Id"]
+    }
+    catch {
+        Write-Error "Please provide a value for -octoApiKey"
+    }
 }
 
 if ($octoApiKey -like ""){
@@ -50,7 +54,7 @@ if ($octoApiKey -like ""){
         $octoApiKey = $OctopusParameters["API_KEY"]
     }
     catch {
-        Write-Error "Please provide your Octopus API Key!"
+        Write-Error "Please provide a value for -octoApiKey"
     }
 }
 
