@@ -9,9 +9,6 @@ $ErrorActionPreference = "Stop"
 Write-Output "    Setting the AWS access and secret keys. Also setting the default region to $defaulAwsRegion."
 Initialize-AWSDefaultConfiguration -AccessKey $awsAccessKey -SecretKey $awsSecretKey -Region $defaulAwsRegion 
 
-Write-Warning "Delete this logging! Access key is: $awsAccessKey"
-Write-Warning "Delete this logging! Secret key is: $awsSecretKey"
-
 try {
     Write-Output "    Attempting to connect to EC2."
     $instances = Get-EC2Instance
