@@ -3,7 +3,7 @@ param(
     $awsSecretKey = "",
     $defaulAwsRegion = "eu-west-1", # Other carbon neutral regions are listed here: https://aws.amazon.com/about-aws/sustainability/
     $securityGroupName = "RandomQuotes",
-    $count = 1,
+    $numWebServers = 1,
     $instanceType = "t2.micro", # 1 vCPU, 1GiB Mem, free tier elligible: https://aws.amazon.com/ec2/instance-types/
     $ami = "ami-03acdf9028d28249e", # Microsoft Windows Server 2019 Base with Containers
     $tagValue = "Created manually",
@@ -111,5 +111,5 @@ Write-Output "*"
 # Deploys all the VMs
 Write-Output "Executing .\helper_scripts\build_dbServers.ps1..."
 Write-Output "  (No parameters)"
-& $PSScriptRoot\helper_scripts\build_dbServers.ps1
+& $PSScriptRoot\helper_scripts\build_dbServers.ps1 -numWebServers = $numWebServers
 Write-Output "*"
