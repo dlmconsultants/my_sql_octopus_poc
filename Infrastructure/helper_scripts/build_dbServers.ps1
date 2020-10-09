@@ -2,7 +2,7 @@ param(
     $instanceType = "t2.micro", # 1 vCPU, 1GiB Mem, free tier elligible: https://aws.amazon.com/ec2/instance-types/
     $ami = "ami-0d2455a34bf134234", # Microsoft Windows Server 2019 Base with Containers
     $numWebServers = 1,
-    $timeout = 4800, # seconds
+    $timeout = 1800, # 30 minutes, in seconds
     $octoApiKey = ""
 )
 
@@ -108,7 +108,7 @@ Function Build-Servers {
         $role,
         $value = $tagValue,
         $encodedUserData,
-        $count = 1
+        $required = 1
     )
     $existingServers = Get-Servers -role $role -value $value -includePending
     $required = $count - $existingServers.count
@@ -214,10 +214,10 @@ While (-not $allRunning){
         }
 
         # Logging all the IP addresses
-        Write-Output "      All instances are running!"
-        Write-Output "        SQL Server: $sqlIp"
-        Write-Output "        SQL Jumpox: $jumpIp"
-        Write-Output "        Web Server(s): $webIps"
+        Write-Output "    All instances are running!"
+        Write-Output "      SQL Server: $sqlIp"
+        Write-Output "      SQL Jumpox: $jumpIp"
+        Write-Output "      Web Server(s): $webIps"
         break
     }
     else {
@@ -255,7 +255,13 @@ ForEach ($instance in $runningWebServerInstances){
     [void]$vms.Rows.Add($instance.PublicIpAddress,$webServerRole,$null,$null,$false,$false)
 }
         
-Write-Output "      Waiting for all instances to complete setup... (This normally takes about 5 minutes.)"
+Write-Output "    Waiting for all instances to complete setup..."
+Write-Output "      Once an instance is running, setup normally takes:"
+Write-Output "      - Jumpbox tentacles: 4 minutes"
+Write-Output "      - Web server IIS installs: 6 minutes"
+Write-Output "      - Web Server Tentacles: 7 minutes"
+Write-Output "      - SQL Server install: 10 minutes"
+Write-Output "      - SQL Server Logins: 3 minutes after SQL Server install"
 
 # Helper functions to ping the instances
 function Test-SQL {
@@ -421,7 +427,7 @@ While (-not $allVmsConfigured){
         Write-Output "SUCCESS! Environment built successfully."
         break
     }
-    if (($time -gt 600) -and (-not $runningWarningGiven)){
+    if (($time -gt 1200) -and (-not $runningWarningGiven)){
         Write-Warning "EC2 instances are taking an unusually long time to start."
         $runningWarningGiven = $true
     }
