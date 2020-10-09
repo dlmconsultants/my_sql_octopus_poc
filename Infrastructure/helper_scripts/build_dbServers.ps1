@@ -292,10 +292,10 @@ ForEach ($instance in $runningWebServerInstances){
 Write-Output "    Waiting for all instances to complete setup..."
 Write-Output "      Once an instance is running, setup normally takes:"
 Write-Output "        - Jumpbox tentacles: 4 min"
-Write-Output "        - Web server IIS installs: 6 min"
-Write-Output "        - Web Server Tentacles: 7 min"
-Write-Output "        - SQL Server install: 10 min"
-Write-Output "        - SQL Server Logins: 3 min after SQL Server install"
+Write-Output "        - Web server IIS installs: 6-7 min"
+Write-Output "        - Web server tentacles: 7-8 min"
+Write-Output "        - SQL Server install: 9-11 min"
+Write-Output "        - SQL Server logins: 3-4 min after SQL Server install"
 
 # Helper functions to ping the instances
 function Test-SQL {
