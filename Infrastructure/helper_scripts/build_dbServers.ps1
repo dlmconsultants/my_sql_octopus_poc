@@ -348,8 +348,8 @@ function Test-Tentacle {
 # Waiting to see if they all come online
 $allVmsConfigured = $false
 $runningWarningGiven = $false
-$saCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "sa", $saPassword
-$octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "octopus", $octoPassword
+$saCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "sa", $sqlSaPassword
+$octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "octopus", $sqlOctoPassword
 $sqlDeployed = $false
 $loginsDeployed = $false
 
