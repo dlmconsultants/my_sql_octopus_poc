@@ -29,7 +29,7 @@ catch {
 
 $octoUrl = ""
 try {
-    $octoUrl = $OctopusParameters["Octopus.Web.BaseUrl"]
+    $octoUrl = $OctopusParameters["Octopus.Web.ServerUri"]
 }
 catch {
     $octoUrl = "https://dlmconsultants.octopus.app"
