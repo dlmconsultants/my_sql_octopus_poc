@@ -34,6 +34,8 @@ if ($awsAccessKey -like ""){
     }
 }
 
+Write-Warning "Delete this logging - AWS Access Key is: $awsAccessKey"
+
 if ($awsSecretKey -like ""){
     try {
         $awsSecretKey = $OctopusParameters["AWS_ACCOUNT.SecretKey"]
@@ -44,6 +46,8 @@ if ($awsSecretKey -like ""){
         $missingParams = $missingParams + "-awsSecretKey"
     }
 }
+
+Write-Warning "Delete this logging - AWS Secret Key is: $awsSecretKey"
 
 if ($missingParams.Count -gt 0){
     $errorMessage = "Missing the following parameters: "
