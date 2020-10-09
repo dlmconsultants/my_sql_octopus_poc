@@ -112,6 +112,6 @@ Write-Output "*"
 
 # Deploys all the VMs
 Write-Output "Executing .\helper_scripts\build_dbServers.ps1..."
-Write-Output "  (No parameters)"
-& $PSScriptRoot\helper_scripts\build_dbServers.ps1 -numWebServers = $numWebServers
+Write-Output "  Parameters: -numWebServers $numWebServers"
+& $PSScriptRoot\helper_scripts\build_dbServers.ps1 -numWebServers $numWebServers
 Write-Output "*"
