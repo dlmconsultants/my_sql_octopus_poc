@@ -129,7 +129,7 @@ Build-Servers -role $dbServerRole -encodedUserData $dbServerUserData
 Write-Output "    Launching SQL Jumpbox"
 Build-Servers -role $dbJumpboxRole -encodedUserData $jumpServerUserData
 Write-Output "    Launching Web Server(s)"
-Build-Servers -role $webServerRole -encodedUserData $webServerUserData -count $numWebServers
+Build-Servers -role $webServerRole -encodedUserData $webServerUserData -required $numWebServers
 
 # Checking all the instances
 $dbServerInstances = Get-Servers -role $dbServerRole -includePending
