@@ -3,7 +3,9 @@ param(
     $ami = "ami-0d2455a34bf134234", # Microsoft Windows Server 2019 Base with Containers
     $numWebServers = 1,
     $timeout = 1800, # 30 minutes, in seconds
-    $octoApiKey = ""
+    $octoApiKey = "",
+    $sqlSaPassword = "",
+    $sqlOctoPassword = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -49,6 +51,28 @@ if ($octoApiKey -like ""){
     }
     catch {
         Write-Error "Please provide your Octopus API Key!"
+    }
+}
+
+$checkSql = $true
+if ($sqlSaPassword -like ""){
+    try {
+        $sqlSaPassword = $OctopusParameters["sqlSaPassword"] | ConvertTo-SecureString -AsPlainText -Force
+    }
+    catch {
+        Write-Warning "No sa password provided for SQL Server. Skipping check to see if/when SQL Server comes online"
+        $checkSql = $false    
+    }
+}
+
+$checkLogins = $true
+if ($sqlOctoPassword -like ""){
+    try {
+        $sqlOctoPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
+    }
+    catch {
+        Write-Warning "No octopus password provided for SQL Server. Skipping check to see if/when SQL Server comes online"
+        $checkLogins = $false
     }
 }
 
@@ -245,8 +269,18 @@ $vms = New-Object System.Data.Datatable
 [void]$vms.Columns.Add("iis_running")
 [void]$vms.Columns.Add("tentacle_listening")
 
+$sqlrunning = $null
+if ($checkSql){
+    $sqlrunning = $false
+}
+$sqlLogins = $null
+if ($checkLogins){
+    $sqlLogins = $false
+}
+
+
 ForEach ($instance in $runningDbServerInstances){
-    [void]$vms.Rows.Add($instance.PublicIpAddress,$dbServerRole,$false,$false,$null,$null)
+    [void]$vms.Rows.Add($instance.PublicIpAddress,$dbServerRole,$sqlrunning,$sqlLogins,$null,$null)
 }
 ForEach ($instance in $runningDbJumpboxInstances){
     [void]$vms.Rows.Add($instance.PublicIpAddress,$dbJumpboxRole,$null,$null,$null,$false)
@@ -314,26 +348,8 @@ function Test-Tentacle {
 # Waiting to see if they all come online
 $allVmsConfigured = $false
 $runningWarningGiven = $false
-
-Write-Warning "Remove the hardcoded passwords!"
-$saUsername = "sa"
-try {
-    $saPassword = $OctopusParameters["sqlSaPassword"] | ConvertTo-SecureString -AsPlainText -Force
-}
-catch {
-    $saPassword = "S4fePa55word!!!" | ConvertTo-SecureString -AsPlainText -Force
-}
-$saCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $saUsername, $saPassword
-
-$octoUsername = "octopus"
-try {
-    $octoPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
-}
-catch {
-    $octoPassword = "5re4lsoRocks!" | ConvertTo-SecureString -AsPlainText -Force
-}
-$octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $octoUsername, $octoPassword
-
+$saCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "sa", $saPassword
+$octoCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "octopus", $octoPassword
 $sqlDeployed = $false
 $loginsDeployed = $false
 
