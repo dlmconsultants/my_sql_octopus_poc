@@ -103,4 +103,4 @@ jobs:
       env:
         OCTOPUS_URL: ${{ secrets.OCTOPUS_URL }}
         OCTOPUS_APIKEY: ${{ secrets.OCTOPUS_APIKEY }}
-      run: octo push --package="$ARTIFACTS_FOLDER/$PACKAGE_NAME.$PACKAGE_VERSION$SUFFIX.nupkg" --server=$OCTOPUS_URL --apiKey=$OCTOPUS_API_KEY --space=$OCTOPUS_SPACE_NAME
+      run: octo push --package="$ARTIFACTS_FOLDER/$PACKAGE_NAME.$PACKAGE_VERSION$SUFFIX.nupkg" --server=$OCTOPUS_URL --apiKey=$OCTOPUS_APIKEY --space=$OCTOPUS_SPACE_NAME
