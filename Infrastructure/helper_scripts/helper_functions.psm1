@@ -327,26 +327,34 @@ Function Test-SecretsManagerRoleExists {
 }
 
 Function Test-RoleAddedToProfile {
+    param (
+        [Parameter(Mandatory=$true)]$InstanceProfileName,
+        [Parameter(Mandatory=$true)]$RoleName
+    )    
+    
     try {
-        $added = (Get-IAMInstanceProfileForRole -RoleName SecretsManager) | Where-Object {$_.InstanceProfileName -like "RandomQuotes"}
+        $added = (Get-IAMInstanceProfileForRole -RoleName $RoleName) | Where-Object {$_.InstanceProfileName -like $InstanceProfileName}
     }
     catch {
-        # The Secrets Manager role does not exist 
+        # The role does not exist 
         return $false
     }
     if ($added){
-        # The Secrets Manager role exists, and is added to the RandomQuotes profile
+        # The role exists, and is added to the profile
         return $true
     }
     else {
-        # The Secrets Manager role exists, but is not added to the RandomQuotes profile 
+        # The role exists, but is not added to the profile 
         return $false
     }
 }
 
-Function Test-RandomQuotesProfileExists {
+Function Test-ProfileExists {
+    param (
+        [Parameter(Mandatory=$true)]$InstanceProfileName
+    )
     try {
-        Get-IAMInstanceProfile -InstanceProfileName RandomQuotes | out-null
+        Get-IAMInstanceProfile -InstanceProfileName $InstanceProfileName | out-null
         return $true
     }
     catch {

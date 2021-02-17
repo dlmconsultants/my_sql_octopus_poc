@@ -2,7 +2,7 @@ param(
     $count = 1,
     $instanceType = "t2.micro", # 1 vCPU, 1GiB Mem, free tier elligible: https://aws.amazon.com/ec2/instance-types/
     $ami = "ami-0d2455a34bf134234", # Microsoft Windows Server 2019 Base with Containers
-    $webServerRole = "RandomQuotes_SQL-WebServer",
+    $webServerRole = "my_sql_octopus_poc-WebServer",
     $tagValue = "Created manually",
     $octoUrl = "",
     $octoEnv = "",
@@ -58,7 +58,7 @@ if ($totalRequired -gt 0){
 
     Write-Output "      Instances will each have tag $webServerRole with value $tagValue."
 
-    $NewInstance = New-EC2Instance -ImageId $ami -MinCount $totalRequired -MaxCount $totalRequired -InstanceType $instanceType -UserData $encodedUserData -KeyName RandomQuotes_SQL -SecurityGroup RandomQuotes_SQL -IamInstanceProfile_Name RandomQuotes_SQL
+    $NewInstance = New-EC2Instance -ImageId $ami -MinCount $totalRequired -MaxCount $totalRequired -InstanceType $instanceType -UserData $encodedUserData -KeyName my_sql_octopus_poc -SecurityGroup my_sql_octopus_poc -IamInstanceProfile_Name my_sql_octopus_poc
 
     # Tagging all the instances
     ForEach ($InstanceID  in ($NewInstance.Instances).InstanceId){

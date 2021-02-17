@@ -41,7 +41,7 @@ try {
     Write-Output "      Detected Octopus Project: $rolePrefix"
 }
 catch {
-    $rolePrefix = "RandomQuotes_SQL"
+    $rolePrefix = "my_sql_octopus_poc"
 }
 $tagValue = ""
 try {

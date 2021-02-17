@@ -1,5 +1,5 @@
 param(
-    $securityGroupName = "RandomQuotes"
+    $securityGroupName = "my_sql_octopus_poc"
 )
 
 $ErrorActionPreference = "Stop"  
@@ -19,7 +19,7 @@ else {
 
         # Tags the security group
         $Tag = New-Object Amazon.EC2.Model.Tag
-        $Tag.Key = "RandomQuotes"
+        $Tag.Key = "my_sql_octopus_poc"
         $Tag.Value = ""
         New-EC2Tag -Resource $securityGroup -Tag $Tag
 
