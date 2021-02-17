@@ -1,20 +1,52 @@
-﻿try {
-    Remove-IAMRoleFromInstanceProfile -InstanceProfileName RandomQuotes_SQL -RoleName SecretsManager -Force
-    Write-Output "Existing SecretsManager role removed from profile RandomQuotes_SQL."
-}
-catch {
-    Write-Output "SecretsManager role is not already added to profile RandomQuotes_SQL"
-}
-try {
-    Remove-IAMInstanceProfile -InstanceProfileName RandomQuotes_SQL -Force
-    Write-Output "Removed existing profile RandomQuotes_SQL."
-}
-catch {
-    Write-Output "Profile RandomQuotes_SQL does not already exist."
+﻿# Importing helper functions
+Import-Module -Name "$PSScriptRoot\helper_functions.psm1" -Force
+
+# Check the SecretsManager role exists before running this script
+if (-not (Test-SecretsManagerRoleExists)){
+    Write-Error "SecretsManager role does not exist. Verify that the SecretsManager role exists, then try running this script again."
 }
 
-Write-Output "Creating new profile: RandomQuotes_SQL"
-New-IAMInstanceProfile -InstanceProfileName RandomQuotes_SQL
+# Test to see if SecretsManager role is already added to RandomQuotes profile...
+if (Test-RoleAddedToProfile){
+    Write-Output "    SecretsManager role is already added to RandomQuotes profile."
+    # Our work here is done!
+}
 
-Write-Output "Adding SecretsManager role to profile RandomQuotes_SQL."
-Add-IAMRoleToInstanceProfile -InstanceProfileName RandomQuotes_SQL -RoleName SecretsManager
+# Apparently SecretsManager role is not added to RandomQuotes profile, looks like we have work to do...
+else {
+    # If required, create a RandomQuotes profile...
+    if (Test-RandomQuotesProfileExists){
+        Write-Output "    RandomQuotes profile already exists."
+    }
+    else {
+        Write-Output "    Creating RandomQuotes profile."
+        try {
+            New-IAMInstanceProfile -InstanceProfileName RandomQuotes | out-null
+            Write-Output "      RandomQuotes profile created."
+        }
+        catch {
+            if (Test-RandomQuotesProfileExists){
+                Write-Output "      RandomQuotes profile created by a competing process."
+            }
+            else {
+                Write-Warning "Failed to create RandomQuotes profile."
+            }
+        }
+    }
+
+    # Adding the SecretsManager role to the RandomQuotes profile
+    Write-Output "    Adding SecretsManager role to RandomQuotes profile."
+    try {
+        Add-IAMRoleToInstanceProfile -InstanceProfileName RandomQuotes -RoleName SecretsManager
+        Write-Output "      SecretsManager role added to RandomQuotes profile."
+    }
+    catch {
+        if (Test-RoleAddedToProfile){
+            Write-Output "      SecretsManager role added to RandomQuotes profile by a competing process."
+        }
+        else {
+            Write-Warning "Failed to add SecretsManager role to RandomQuotes profile."
+        }
+    }
+}
+

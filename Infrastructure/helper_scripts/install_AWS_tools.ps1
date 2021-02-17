@@ -1,147 +1,136 @@
+<#
+Installs the latest version of the necessary AWS PowerShell modules.
+
+This script is annoyingly complicated to avoid race conditions.
+If two runbooks try to install a module at the same time, you run into all sorts of pain.
+In development I hit this issue quite often. For example, whenever I tried to build/delete both a Dev and Prod environment at the same time.
+
+To avoid problems, this script saves a "holding file" whenever it tries to install anything.
+Each holding file contains the RunbookRunId of the runbook run that created it.
+Other runbooks can check these holding files to avoid two runbooks attempting to install the same module simultaneously.
+
+To keep this simple, I've extracted a few helper functions to \Infrastructure\helper_scripts\helper_functions.psm1:
+- New-HoldFile
+- Test-HoldFile
+- Remove-HoldFile
+- Test-ModuleInstalled
+- Install-ModuleWithHoldFile
+#>
+
+######################################################
+###                     CONFIG                     ###
+######################################################
+
 $ErrorActionPreference = "Stop"  
 
-# Check to see if holding file exists - implying that another process is already installing AWS Tools
-# (If two processes try to install it at the same time it's likely that one will fail, causing a nasty error)
-$holdingFilePath = "C:/out"
-if (test-path $holdingFilePath){
-    Write-Output "    $holdingFilePath already exists."
-}
-else {
-    Write-Output "    Creating directory: $holdingFilePath"
-    try {
-        New-Item -Type Directory $holdingFilePath | out-null
-    }
-    catch {
-        Write-Output "    Failed to create directory. This sometimes happens if two runbooks are running simultaneously on the same worker."
-        if (test-path $holdingFilePath){
-            Write-Output "    $holdingFilePath now exists now."
-        }
-        else {
-            Write-Error "Failed to create $holdingFilePath"
-        }
-    }
-}
-$holdingFile = "$holdingFilePath/holdingfile.txt"
-$warningTime = 90 # seconds
-$warningGiven = $false
-$timeoutTime = 120 # seconds
-if (test-path $holdingFile){
-    try {
-        $holdingFileText = Get-Content -Path $holdingFile -Raw
-        Write-Output "    $holdingFileText"
-    }
-    catch {
-        Write-Output "    Could not read $holdingFile"
-    }
+# Importing helper functions
+Import-Module -Name "$PSScriptRoot\helper_functions.psm1" -Force
 
-    $AwsBeingInstalled = $true
-    $stopwatch =  [system.diagnostics.stopwatch]::StartNew()
-    while ($AwsBeingInstalled){
-        Start-Sleep -s 5
+# The modules we need
+$requiredModules = @(
+    "AWS.Tools.Common",
+    "AWS.Tools.EC2",
+    "AWS.Tools.IdentityManagement",
+    "AWS.Tools.SimpleSystemsManagement",
+    "AWS.Tools.SecretsManager"
+)
+$installedModules = @()
 
-        # If the other runbook has finished
-        if (-not (test-path $holdingFile)){
-            $AwsBeingInstalled = $false
-            Write-Output "    Looks like the AWS Tools install should be finished now."
-            Write-Output "    Verifying that AWS Tools is installed correctly..."
-            break
-        }
+######################################################
+###                INSTALL MODULES                 ###
+######################################################
 
-        # Checking to see if a new runbook has taken over
-        try {
-            $latestHoldingFileText = Get-Content -Path $holdingFile -Raw
-        }
-        catch {
-            $latestHoldingFileText = $holdingfiletext
-        }
-        if ($latestHoldingFileText -notlike $holdingfiletext){
-            Write-Output "    A new process is working on the AWS Tools install."
-            Write-Output "    $latestHoldingFileText"
-            Write-Output "    Re-setting the timer."
-            $stopwatch.Restart()
-            $holdingfiletext = $latestHoldingFileText 
-        }
-
-        # Getting the current second
-        $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
-        
-        # If the other runbook is still going
-        if ($AwsBeingInstalled){
-            Write-Output "      $time seconds: AWS Tools still being installed..."
-        }
-
-        # If another runbook is hogging the process for an unusually long time
-        if (($time -ge $warningTime) -and (-not $warningGiven)){
-            Write-Warning "Installing AWS Tools normally only takes about 70 seconds."
-            $warningGiven = $true
-        }
-
-        # If another runbook has been hogging for way too long
-        if ($time -ge $timeoutTime){
-            Write-Error "Timed out at $time seconds."
-        }
-    }
-}
-
-# Create holding file to stop any other runbooks from installing AWS Tools at the same time
-$RunbookRunId = "[RunbookRunId unknown]"
-try {
-    $RunbookRunId = $OctopusParameters["Octopus.RunbookRun.Id"]
-}
-catch {
-    Write-Warning "Failed to detect Octopus.RunbookRun.Id from Octopus system variables."
-}
-$startTime = Get-Date
-$holdingFileText = "Runbook $RunbookRunId installing AWS tools at: $startTime"
-Write-Output "    Creating a holding file at: $holdingFile"
-try {$holdingFileText | out-file $holdingFile
-}
-catch {
-    Write-Warning "Failed to create a holding file."
-}
-# Installing AWS Tools
-$Installedmodules = Get-InstalledModule
-
-if ($Installedmodules.name -contains "AWS.Tools.Common"){
-    Write-Output "      Module AWS.Tools.Common is already installed "
-}
-else {
-    Write-Output "      AWS.Tools.Common is not installed."
-    Write-Output "        Installing AWS.Tools.Common..."
-    Install-Module AWS.Tools.Common -Force
-}
-
-if ($Installedmodules.name -contains "AWS.Tools.EC2"){
-    Write-Output "      Module AWS.Tools.EC2 is already installed."
-}
-else {
-    Write-Output "      AWS.Tools.EC2 is not installed."
-    Write-Output "        Installing AWS.Tools.EC2..."
-    Install-Module AWS.Tools.EC2 -Force
-}
-
-if ($Installedmodules.name -contains "AWS.Tools.IdentityManagement"){
-    Write-Output "      Module AWS.Tools.IdentityManagement is already installed "
-}
-else {
-    Write-Output "      AWS.Tools.IdentityManagement is not installed."
-    Write-Output "        Installing AWS.Tools.IdentityManagement..."
-    Install-Module AWS.Tools.IdentityManagement -Force
-}
-
-Write-Output "      AWS Tools is set up and ready to use."
-
-# Delete holding file
-Write-Output "    Removing holding file."
-try {
-    Remove-Item $holdingFile
-}
-catch {
-    if (test-path $holdingFilePath){
-        $holdingFileText = Get-Content -Path $holdingFile -Raw
-        Write-Error "Tried to delete holding file at $holdingFilePath, but it does exist. Content: $holdingFileText"
+Write-Output "    Installing modules."
+foreach ($module in $requiredModules){
+    $moduleAlreadyInstalled = Test-ModuleInstalled -moduleName $module
+    if ($moduleAlreadyInstalled){
+        Write-Output "      Module $module is already installed."
+        $installedModules += $module
     }
     else {
-        Write-Warning "Tried to delete holding file at $holdingFilePath, but it wasnt there?"
+        $holdingProcess = Test-HoldFile -holdFileName $module
+        if ($holdingProcess){
+            Write-Output "      Module $module is being installed by $holdingProcess"
+        } 
+        else {
+            Write-Output "      Installing $module."
+            Install-ModuleWithHoldFile -moduleName $module | out-null
+            if (Test-ModuleInstalled -moduleName $module){
+                Write-Output "        $module has been installed successfully."
+                $installedModules += $module
+            }
+        }
     }
+}
+
+######################################################
+###          HOLD FOR COMPETING PROCESSES          ###
+######################################################
+
+if ($installedModules.length -lt $requiredModules.length) {
+    Write-Output "    Waiting for all modules to finish installing."
+        
+    # A little config for holding loop
+    $time = 0
+    $timeout = 100
+    $pollFrequency = 5
+    $stopwatch =  [system.diagnostics.stopwatch]::StartNew()
+
+    # Waiting in a holding loop until all modules are installed
+    while ($installedModules.length -lt $requiredModules.length){
+        $remainingModules = $requiredModules | Where-Object {$_ -notin $installedModules}
+        foreach ($module in $remainingModules){
+            if (Test-ModuleInstalled -moduleName $module){
+                $installedModules += $module
+            }
+        }
+
+        # Logging progress
+        $numInstalled = $installedModules.length
+        $numRequired = $requiredModules.length
+        if ($numInstalled -eq $numRequired){
+            break
+        }
+        Write-Output    "      $time/$timeout seconds: $numInstalled/$numRequired modules installed."
+
+        # Wait a bit, then try again
+        $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
+        if ($time -gt $timeout){
+            Write-Warning "This is taking an unusually long time."
+            break
+        }
+        Start-Sleep $pollFrequency
+    }
+}
+
+# If there are any hold files left, delete them
+# By now, any other process should have had plenty of time to install the module
+# If it failed, but it did not clean up the hold file, that's likely to cause problems
+
+Remove-AllHoldFiles
+
+######################################################
+###          CHECK ALL MODULES INSTALLED           ###
+######################################################          
+
+$successfulInstalls = @()
+$failedInstalls = @()
+foreach ($module in $requiredModules){
+    $moduleInstalled = Test-ModuleInstalled -moduleName $module
+    if ($moduleInstalled){
+        $successfulInstalls += $module
+    }
+    else {
+        $failedInstalls += $module
+    }
+}
+
+$diff = Compare-Object -ReferenceObject $requiredModules -DifferenceObject $successfulInstalls 
+
+if ($diff){
+    $errorMsg = "FAILED TO INSTALL: $failedInstalls"
+    Write-Error $ErrorMsg
+}
+else {
+    Write-Output "    All modules installed successfully."
 }
