@@ -257,10 +257,10 @@ function Test-Tentacle {
     param (
         [Parameter(Mandatory=$true)][string]$ip,
         [Parameter(Mandatory=$true)][string]$octoUrl,
-        [Parameter(Mandatory=$true)][string]$octoApiHeader        
+        [Parameter(Mandatory=$true)][string]$header        
     )
     $URL = "https://" + $ip + ":10933/"
-    $allMachines = ((Invoke-WebRequest ("$OctopusUrl/api/machines") -Headers $octoApiHeader -UseBasicParsing).content | ConvertFrom-Json).items
+    $allMachines = ((Invoke-WebRequest ("$OctopusUrl/api/machines") -Headers $header -UseBasicParsing).content | ConvertFrom-Json).items
     if ($allMachines.Uri -contains $URL){
         return $true
     }

@@ -398,7 +398,7 @@ While (-not $allVmsConfigured){
     # Checking whether any new tentacles have come online yet
     $pendingTentacles = $vms.Select("tentacle_listening like '$false'")
     forEach ($ip in $pendingTentacles.ip){
-        $tentacleDeployed = Test-Tentacle -octoUrl $octoUrl -envId $envId -ip $ip -header $octoApiHeader
+        $tentacleDeployed = Test-Tentacle -octoUrl $octoUrl -ip $ip -header $octoApiHeader
         if ($tentacleDeployed){
             $thisVm = ($vms.Select("ip = '$ip'"))
             $thisVm[0]["tentacle_listening"] = $true
