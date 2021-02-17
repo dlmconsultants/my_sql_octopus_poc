@@ -25,7 +25,7 @@ param(
 ##########     1. Initialising variables etc     ##########
 
 # Importing helper functions
-Import-Module -Name "$PSScriptRoot\functions.psm1" -Force
+Import-Module -Name "$PSScriptRoot\helper_functions.psm1" -Force
 
 # If anything fails, stop
 $ErrorActionPreference = "Stop"
