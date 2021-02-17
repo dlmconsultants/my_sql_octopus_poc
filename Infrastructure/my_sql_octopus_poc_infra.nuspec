@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <package>
   <metadata>
-    <id>RandomQuotes_SQL_infra</id>
+    <id>my_sql_octopus_poc_infra</id>
     <version>0.0.0</version>
     <authors>Alex Yates</authors>
     <description>Everything you need to spin up your own Octopus playground in AWS</description>
