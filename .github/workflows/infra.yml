@@ -26,7 +26,7 @@ on:
 
 env:  
   OUTPUT_FOLDER: PackagesOutput
-  PACKAGE_NAME: RandomQuotes_SQL_infra
+  PACKAGE_NAME: my_sql_octopus_poc_infra
   OCTOPUS_SPACE_NAME: Default
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true # Note: This is a bad idea and should be fixed.
                                         # For more information, see:
