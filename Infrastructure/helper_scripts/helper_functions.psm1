@@ -194,7 +194,7 @@ Function Build-Servers {
     $existingServers = Get-Servers -role $role -value $value -includePending
     $required = $required - $existingServers.count
     if ($required -gt 0){
-        $NewInstance = New-EC2Instance -ImageId $ami -MinCount $required -MaxCount $required -InstanceType $instanceType -UserData $encodedUserData -KeyName RandomQuotes_SQL -SecurityGroup RandomQuotes_SQL -IamInstanceProfile_Name RandomQuotes_SQL
+        $NewInstance = New-EC2Instance -ImageId $ami -MinCount $required -MaxCount $required -InstanceType $instanceType -UserData $encodedUserData -KeyName my_sql_octopus_poc -SecurityGroup my_sql_octopus_poc -IamInstanceProfile_Name my_sql_octopus_poc
         # Tagging all the instances
         ForEach ($InstanceID  in ($NewInstance.Instances).InstanceId){
             New-EC2Tag -Resources $( $InstanceID ) -Tags @(

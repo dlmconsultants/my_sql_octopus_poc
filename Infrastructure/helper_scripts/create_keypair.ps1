@@ -1,5 +1,5 @@
 param(
-    $keyPairName = "RandomQuotes_SQL",
+    $keyPairName = "my_sql_octopus_poc",
     $keyPairDir = "C:\keypairs"
 )
 
