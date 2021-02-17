@@ -104,6 +104,19 @@ Write-Output "  Parameters: -AwsAccessKey $awsAccessKey -AwsSecretKey *** -Defau
 & $PSScriptRoot\helper_scripts\configure_default_aws_profile.ps1 -AwsAccessKey $awsAccessKey -AwsSecretKey $awsSecretKey -DefaulAwsRegion $defaulAwsRegion
 Write-Output "*"
 
+# Create AWS Role
+Write-Output "Executing .\helper_scripts\create_aws_role.ps1..."
+Write-Output "  (No parameters)"
+& $PSScriptRoot\helper_scripts\create_aws_role.ps1
+Write-Output "*"
+
+# Creates a RandomQuotes profile containing the SecretsManager role for all VMs
+# This allows the VMs to access secrets manager, which allows us to avoid hardcoding passwords into sourcecode/the userdata file
+Write-Output "Executing .\helper_scripts\add_role_to_profile.ps1..."
+Write-Output "  (No parameters)"
+& $PSScriptRoot\helper_scripts\add_role_to_profile.ps1
+Write-Output "*"
+
 # Creates a security group in AWS to allow RDP sessions on all your demo VMs
 Write-Output "Executing .\helper_scripts\create_security_group.ps1..."
 Write-Output "  Parameters: -securityGroupName $securityGroupName"
