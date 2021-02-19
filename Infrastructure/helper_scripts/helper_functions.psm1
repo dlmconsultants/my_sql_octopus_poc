@@ -172,23 +172,24 @@ Function Get-UserData {
 Function Get-Servers {
     param (
         $role,
-        $value = $tagValue,
+        $environment,
         [switch]$includePending
     )
     $acceptableStates = "running"
     if($includePending){
         $acceptableStates = @("pending", "running")
     }
-    $instances = (Get-EC2Instance -Filter @{Name="tag:$role";Values=$value}, @{Name="instance-state-name";Values=$acceptableStates}).Instances 
+    $instances = (Get-EC2Instance -Filter @{Name="tag:$role";Values=$environment}, @{Name="instance-state-name";Values=$acceptableStates}).Instances 
     return $instances
 }
 
 # Helper function to build any servers that don't already exist
 Function Build-Servers {
     param (
-        $role,
-        $value = $tagValue,
-        $encodedUserData,
+        [Parameter(Mandatory=$true)]$role,
+        [Parameter(Mandatory=$true)]$ami,
+        [Parameter(Mandatory=$true)]$environment,
+        [Parameter(Mandatory=$true)]$encodedUserData,
         $required = 1
     )
     $existingServers = Get-Servers -role $role -value $value -includePending
@@ -198,7 +199,7 @@ Function Build-Servers {
         # Tagging all the instances
         ForEach ($InstanceID  in ($NewInstance.Instances).InstanceId){
             New-EC2Tag -Resources $( $InstanceID ) -Tags @(
-                @{ Key=$role; Value=$value}
+                @{ Key=$role; Value=$environment}
             );
         }
     }    

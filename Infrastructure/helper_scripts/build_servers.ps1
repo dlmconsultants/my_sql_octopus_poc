@@ -17,8 +17,7 @@ param(
     $octoApiKey = "",
     $sqlOctoPassword = "",
     $octoUrl = "",
-    $envId = "",
-    $environment = "Manual run"
+    $envId = ""
 )
 
 ##########     1. Initialising variables etc     ##########
@@ -47,13 +46,13 @@ try {
 catch {
     $rolePrefix = "my_sql_octopus_poc"
 }
-$tagValue = ""
+$environment = "Environment unknown"
 try {
-    $tagValue = $OctopusParameters["Octopus.Environment.Name"]
-    Write-Output "      Detected Octopus Environment Name: $tagValue"
+    $environment = $OctopusParameters["Octopus.Environment.Name"]
+    Write-Output "      Detected Octopus Environment Name: $environment"
 }
 catch {
-    $tagValue = $environment
+    Write-Warning "No value provided for environment. Setting it to: $environment"
 }
 if ($octoUrl -like ""){
     try {
@@ -105,7 +104,7 @@ $dbServerUserData = Get-UserData -fileName "VM_UserData_DbServer.ps1" -octoUrl $
 Write-Output "    Checking required infrastucture changes..."
 
 # Calculating what infra we already have 
-$existingVmsHash = Get-ExistingInfraTotals -environment $tagValue -rolePrefix $rolePrefix
+$existingVmsHash = Get-ExistingInfraTotals -environment $environment -rolePrefix $rolePrefix
 $writeableExistingVms = Write-InfraInventory -vmHash $existingVmsHash
 Write-Output "      Existing VMs: $writeableExistingVms"
 
@@ -192,7 +191,7 @@ if ($webServersToKill -gt 0){
 # Building all the servers
 if($deploySql){
     Write-Output "    Launching SQL Server"
-    Build-Servers -role $dbServerRole -encodedUserData $dbServerUserData
+    Build-Servers -role $dbServerRole -ami $ami -environment $environment -encodedUserData $dbServerUserData
     if($deployJump){
         Write-Output "      (Waiting to launch SQL jumpbox server until we have an IP address for SQL Server instance)." 
     }
@@ -200,7 +199,7 @@ if($deploySql){
 
 if($webServersToStart -gt 0){
     Write-Output "    Launching Web Server(s)"
-    Build-Servers -role $webServerRole -encodedUserData $webServerUserData -required $numWebServers    
+    Build-Servers -role $webServerRole -ami $ami -environment $environment -encodedUserData $webServerUserData -required $numWebServers   
 }
 
 # Checking all the instances
@@ -288,7 +287,7 @@ While (-not $allRunning){
 if ($deployJump){
     Write-Output "    Launching SQL Jumpbox"
     $jumpServerUserData = Get-UserData -fileName "VM_UserData_DbJumpbox.ps1" -octoUrl $octoUrl -role $dbJumpboxRole -sql_ip $sqlIp
-    Build-Servers -role $dbJumpboxRole -encodedUserData $jumpServerUserData
+    Build-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData $jumpServerUserData  
 }
 
 ########   5. Installing dbatools so that we cna ping SQL Server to see when it comes online   ########    ##########
@@ -467,7 +466,7 @@ While (-not $allVmsConfigured){
 Write-Output "    Verifying infrastructure:"
 
 # Calculating the total infra requirement
-$existingVmsHash = Get-ExistingInfraTotals -environment $tagValue -rolePrefix $rolePrefix
+$existingVmsHash = Get-ExistingInfraTotals -environment $environment -rolePrefix $rolePrefix
 $writeableExistingVms = Write-InfraInventory -vmHash $existingVmsHash
 Write-Output "      Existing VMs: $writeableExistingVms"
 
