@@ -12,7 +12,6 @@
 
 param(
     $instanceType = "t2.micro", # 1 vCPU, 1GiB Mem, free tier elligible: https://aws.amazon.com/ec2/instance-types/
-    $ami = "ami-0d2455a34bf134234", # Microsoft Windows Server 2019 Base with Containers
     $numWebServers = 1,
     $timeout = 1800, # 30 minutes, in seconds
     $octoApiKey = "",
@@ -34,6 +33,11 @@ $ErrorActionPreference = "Stop"
 $stopwatch =  [system.diagnostics.stopwatch]::StartNew()
 
 # Initialising variables
+# Getting the required instance ami for AWS region
+$image = Get-SSMLatestEC2Image -ImageName Windows_Server-2019-English-Full-Bas* -Path ami-windows-latest | Where-Object {$_.Name -like "Windows_Server-2019-English-Full-Base"} | Select-Object Value
+$ami = $image.Value
+Write-Output "    Windows_Server-2019-English-Full-Base image in this AWS region has ami: $ami"
+
 Write-Output "    Auto-filling missing parameters from Octopus System Variables..."
 $rolePrefix = ""
 try {

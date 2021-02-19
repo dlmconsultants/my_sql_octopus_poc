@@ -5,7 +5,6 @@ param(
     $securityGroupName = "my_sql_octopus_poc",
     $numWebServers = 1,
     $instanceType = "t2.micro", # 1 vCPU, 1GiB Mem, free tier elligible: https://aws.amazon.com/ec2/instance-types/
-    $ami = "ami-03acdf9028d28249e", # Microsoft Windows Server 2019 Base with Containers
     $tagValue = "Created manually",
     $octoUrl = "",
     $octoEnv = "",
