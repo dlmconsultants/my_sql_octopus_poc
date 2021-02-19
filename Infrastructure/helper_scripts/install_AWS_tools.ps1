@@ -78,10 +78,17 @@ if ($installedModules.length -lt $requiredModules.length) {
 
     # Waiting in a holding loop until all modules are installed
     while ($installedModules.length -lt $requiredModules.length){
+        # Update the list of remaining modules
         $remainingModules = $requiredModules | Where-Object {$_ -notin $installedModules}
+        
+        # Check if each remaining module is installed
         foreach ($module in $remainingModules){
             if (Test-ModuleInstalled -moduleName $module){
                 $installedModules += $module
+            }
+            else {
+                # If no other process is holding the install, install the module
+                Install-ModuleWithHoldFile -moduleName $module | out-null
             }
         }
 
@@ -92,13 +99,22 @@ if ($installedModules.length -lt $requiredModules.length) {
             break
         }
         Write-Output    "      $time/$timeout seconds: $numInstalled/$numRequired modules installed."
+        
+        # Before timing out, attempt to delete all the hold files and try one more time. 
+        # (It shouldn't take this long to install a module. Most likely something went wrong with the other process.)
+        if ($time -gt ($timeout - ($pollFrequency + 5))){
+            Write-Warning "This is taking an unusually long time. Deleting all hold files and trying again."
+            Remove-AllHoldFiles
+        }
+
+        # Times up
+        if ($time -gt ($timeout){
+            Write-Warning "Timed out at $time seconds."
+            break
+        }
 
         # Wait a bit, then try again
         $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
-        if ($time -gt $timeout){
-            Write-Warning "This is taking an unusually long time."
-            break
-        }
         Start-Sleep $pollFrequency
     }
 }
