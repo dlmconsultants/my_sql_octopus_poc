@@ -88,7 +88,11 @@ if ($installedModules.length -lt $requiredModules.length) {
             }
             else {
                 # If no other process is holding the install, install the module
-                Install-ModuleWithHoldFile -moduleName $module | out-null
+                if (-not (Test-HoldFile -holdFileName $module)){
+                    Write-Warning "Looks like other process failed to install module: $module"
+                    Write-Output "    Attempting to install: $module"
+                    Install-ModuleWithHoldFile -moduleName $module | out-null
+                }
             }
         }
 
