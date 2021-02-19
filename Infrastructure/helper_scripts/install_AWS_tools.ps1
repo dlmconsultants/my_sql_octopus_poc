@@ -112,7 +112,7 @@ if ($installedModules.length -lt $requiredModules.length) {
         }
 
         # Times up
-        if ($time -gt ($timeout){
+        if ($time -gt ($timeout)){
             Write-Warning "Timed out at $time seconds."
             break
         }
