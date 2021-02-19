@@ -129,7 +129,7 @@ Write-Output "  Parameters: -securityGroupName $securityGroupName"
 Write-Output "*"
 
 # Deploys all the VMs
-Write-Output "Executing .\helper_scripts\build_dbServers.ps1..."
+Write-Output "Executing .\helper_scripts\build_servers.ps1..."
 Write-Output "  Parameters: -numWebServers $numWebServers"
 & $PSScriptRoot\helper_scripts\build_servers.ps1 -numWebServers $numWebServers
 Write-Output "*"
