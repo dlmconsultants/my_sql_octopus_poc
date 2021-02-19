@@ -103,10 +103,16 @@ Write-Output "  Parameters: -AwsAccessKey $awsAccessKey -AwsSecretKey *** -Defau
 & $PSScriptRoot\helper_scripts\configure_default_aws_profile.ps1 -AwsAccessKey $awsAccessKey -AwsSecretKey $awsSecretKey -DefaulAwsRegion $defaulAwsRegion
 Write-Output "*"
 
-# Create AWS Role
+# Create Keypair
 Write-Output "Executing .\helper_scripts\create_aws_role.ps1..."
 Write-Output "  (No parameters)"
 & $PSScriptRoot\helper_scripts\create_aws_role.ps1
+Write-Output "*"
+
+# Create AWS Role
+Write-Output "Executing .\helper_scripts\create_keypair.ps1..."
+Write-Output "  (No parameters)"
+& $PSScriptRoot\helper_scripts\create_keypair.ps1
 Write-Output "*"
 
 # Creates a RandomQuotes profile containing the SecretsManager role for all VMs
