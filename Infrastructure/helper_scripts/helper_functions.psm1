@@ -205,6 +205,47 @@ Function Start-Servers {
     }    
 }
 
+function Get-ExistingInfraTotals {
+    param (
+        $environment,
+        $rolePrefix
+    )
+    $sqlVms = Get-Servers -role "$rolePrefix-DbServer" -environment $environment -$includePending
+    $jumpVms = Get-Servers -role "$rolePrefix-DbJumpbox" -environment $environment -$includePending
+    $webVms = Get-Servers -role "$rolePrefix-WebServer" -environment $environment -$includePending
+
+    $CurrentInfra = @{ sqlVms = $sqlVms.count; jumpVms = $jumpVms.count; webVms = $webVms.count}
+
+    return $CurrentInfra
+}
+
+function Get-RequiredInfraTotals {
+    param (
+        $numWebServers
+    )
+    $sqlVms = 1
+    $jumpVms = 1
+    $webVms = $numWebServers
+
+    $CurrentInfra = @{ sqlVms = $sqlVms; jumpVms = $jumpVms; webVms = $webVms}
+
+    return $CurrentInfra
+}
+
+function Write-InfraInventory {
+    param (
+        $vmHash
+    )
+    $returnString = ""
+    try {
+        $returnString = "SQL Server VMs: " + $vmHash.sqlVms + ", SQL Jumpbox VMs: " + $vmHash.jumpVms + ", Web Server VMs: " + $vmHash.webVms
+        return $returnString
+    }
+    catch {
+        Write-Error "VM hash not in the correct format. Try using either the Get-ExistingInfraTotals or Get-RequiredInfraTotals cmdlets to create it."
+    }
+}
+
 # Helper function to remove an Octopus Tentacle with a given IP address 
 function Remove-OctopusMachine {
     param (
@@ -300,21 +341,6 @@ function Update-Calamari {
     } | ConvertTo-Json
     
     Invoke-RestMethod $OctopusUrl/api/tasks -Method Post -Body $body -Headers $header | out-null
-}
-
-# Helper functions to create and compare current and required inventories of servers 
-function Get-CurrentInfraTotals {
-    param (
-        $environment,
-        $rolePrefix
-    )
-    $sqlVms = Get-Servers -role "$rolePrefix-DbServer" -value $environment -$includePending
-    $jumpVms = Get-Servers -role "$rolePrefix-DbJumpbox" -value $environment -$includePending
-    $webVms = Get-Servers -role "$rolePrefix-WebServer" -value $environment -$includePending
-
-    $CurrentInfra = @{ sqlVms = $sqlVms.count; jumpVms = $jumpVms.count; webVms = $webVms.count}
-
-    return $CurrentInfra
 }
 
 Function Test-SecretsManagerRoleExists {
@@ -413,43 +439,3 @@ function Test-KeyPair {
     }
 }
 
-function Get-ExistingInfraTotals {
-    param (
-        $environment,
-        $rolePrefix
-    )
-    $sqlVms = Get-Servers -role "$rolePrefix-DbServer" -value $environment -$includePending
-    $jumpVms = Get-Servers -role "$rolePrefix-DbJumpbox" -value $environment -$includePending
-    $webVms = Get-Servers -role "$rolePrefix-WebServer" -value $environment -$includePending
-
-    $CurrentInfra = @{ sqlVms = $sqlVms.count; jumpVms = $jumpVms.count; webVms = $webVms.count}
-
-    return $CurrentInfra
-}
-
-function Get-RequiredInfraTotals {
-    param (
-        $numWebServers
-    )
-    $sqlVms = 1
-    $jumpVms = 1
-    $webVms = $numWebServers
-
-    $CurrentInfra = @{ sqlVms = $sqlVms; jumpVms = $jumpVms; webVms = $webVms}
-
-    return $CurrentInfra
-}
-
-function Write-InfraInventory {
-    param (
-        $vmHash
-    )
-    $returnString = ""
-    try {
-        $returnString = "SQL Server VMs: " + $vmHash.sqlVms + ", SQL Jumpbox VMs: " + $vmHash.jumpVms + ", Web Server VMs: " + $vmHash.webVms
-        return $returnString
-    }
-    catch {
-        Write-Error "VM hash not in the correct format. Try using either the Get-CurrentInfraTotals or Get-RequiredInfraTotals cmdlets to create it."
-    }
-}
