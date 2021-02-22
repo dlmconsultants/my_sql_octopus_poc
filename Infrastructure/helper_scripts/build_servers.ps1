@@ -287,7 +287,7 @@ While (-not $allRunning){
 if ($deployJump){
     Write-Output "    Launching SQL Jumpbox"
     $jumpServerUserData = Get-UserData -fileName "VM_UserData_DbJumpbox.ps1" -octoUrl $octoUrl -role $dbJumpboxRole -sql_ip $sqlIp
-    Build-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData $jumpServerUserData  
+    Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData $jumpServerUserData  
 }
 
 ########   5. Installing dbatools so that we cna ping SQL Server to see when it comes online   ########    ##########
