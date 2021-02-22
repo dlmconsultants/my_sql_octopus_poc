@@ -163,7 +163,7 @@ if ($requiredVmsHash.webVms -eq $existingVmsHash.webVms){
 
 if ($killJump){
     Write-Output "      Removing the existing SQL Jumpbox(es)."
-    $jumpServers = Get-Servers -role $dbJumpboxRole -includePending
+    $jumpServers = Get-Servers -role $dbJumpboxRole -environment $environment -includePending
     foreach ($jumpServer in $jumpServers){
         $id = $jumpServer.InstanceId
         $ip = $jumpServer.PublicIpAddress 
@@ -175,7 +175,7 @@ if ($killJump){
 }
 if ($webServersToKill -gt 0){
     Write-Output "      Removing $webServersToKill web servers."
-    $webServers = Get-Servers -role $webServerRole -includePending
+    $webServers = Get-Servers -role $webServerRole -environment $environment -includePending
     for ($i = 0; $i -lt $webServersToKill; $i++){
         $id = $webServers[$i].InstanceId
         $ip = $webServers[$i].PublicIpAddress 
@@ -203,8 +203,8 @@ if($webServersToStart -gt 0){
 }
 
 # Checking all the instances
-$dbServerInstances = Get-Servers -role $dbServerRole -includePending
-$webServerInstances = Get-Servers -role $webServerRole -includePending
+$dbServerInstances = Get-Servers -role $dbServerRole -environment $environment -includePending
+$webServerInstances = Get-Servers -role $webServerRole -environment $environment -includePending
 
 # Logging all the instance details
 Write-Output "      Verifying instances: "
@@ -251,8 +251,8 @@ While (-not $allRunning){
     $totalRequired = $numWebServers + 1 # Web Servers + SQL Server.
                                         # We'll launch the jumpbox after we know the SQL IP address.
 
-    $runningDbServerInstances = Get-Servers -role $dbServerRole
-    $runningWebServerInstances = Get-Servers -role $webServerRole
+    $runningDbServerInstances = Get-Servers -role $dbServerRole -environment $environment
+    $runningWebServerInstances = Get-Servers -role $webServerRole -environment $environment
 
     $NumRunning = $runningDbServerInstances.count + $runningWebServerInstances.count
 
@@ -305,7 +305,7 @@ catch {
 
 if ($deployJump){
     # Checking to see if the jumpbox came online
-    $dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
+    $dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -environment $environment -includePending
     if ($dbJumpboxInstances.count -ne 1){
         $instancesFailed = $true
         $num = $dbJumpboxInstances.count
@@ -315,7 +315,7 @@ if ($deployJump){
     $runningDbJumpboxInstances = @()
     While (-not $jumpboxRunning){
 
-        $runningDbJumpboxInstances = Get-Servers -role $dbJumpboxRole
+        $runningDbJumpboxInstances = Get-Servers -role $dbJumpboxRole -environment $environment
         $NumRunning = $runningDbJumpboxInstances.count
 
         if ($NumRunning -eq 1){
@@ -474,9 +474,9 @@ $requiredVmsHash = Get-RequiredInfraTotals -numWebServers $numWebServers
 $writeableRequiredVms = Write-InfraInventory -vmHash $requiredVmsHash
 Write-Output "      Required VMs: $writeableRequiredVms"
 
-$runningDbServerInstances = Get-Servers -role $dbServerRole
-$dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -includePending
-$runningWebServerInstances = Get-Servers -role $webServerRole
+$runningDbServerInstances = Get-Servers -role $dbServerRole -environment $environment
+$dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -environment $environment -includePending
+$runningWebServerInstances = Get-Servers -role $webServerRole -environment $environment
 $msg = "        SQL Server: " + $runningDbServerInstances[0].PublicIpAddress
 Write-Output $msg 
 $msg = "        SQL Jumpbox: " + $dbJumpboxInstances[0].PublicIpAddress
