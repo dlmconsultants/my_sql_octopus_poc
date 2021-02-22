@@ -16,8 +16,7 @@ param(
     $timeout = 1800, # 30 minutes, in seconds
     $octoApiKey = "",
     $sqlOctoPassword = "",
-    $octoUrl = "",
-    $envId = ""
+    $octoUrl = ""
 )
 
 ##########     1. Initialising variables etc     ##########
@@ -61,15 +60,6 @@ if ($octoUrl -like ""){
     }
     catch {
         Write-Error "Please provide a value for -octoUrl"
-    }
-}
-if ($envId -like ""){
-    try {
-        $envId = $OctopusParameters["Octopus.Environment.Id"]
-        Write-Output "      Detected Octopus Environment ID: $envId"
-    }
-    catch {
-        Write-Error "Please provide a value for -envId"
     }
 }
 if ($octoApiKey -like ""){
