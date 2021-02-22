@@ -184,7 +184,7 @@ Function Get-Servers {
 }
 
 # Helper function to build any servers that don't already exist
-Function Build-Servers {
+Function Start-Servers {
     param (
         [Parameter(Mandatory=$true)]$role,
         [Parameter(Mandatory=$true)]$ami,
