@@ -14,8 +14,13 @@ $missingParams = @()
 
 if ($octoApiKey -like ""){
     try {
-        $octoApiKey = $OctopusParameters["API_KEY"]
-        Write-Output "    Found value for octoApiKey from Octopus variables." 
+        $octoApiKey = $OctopusParameters["OCTOPUS_APIKEY"]
+        if ($octoApiKey -like "API-*"){
+            Write-Output "    Found value for octoApiKey from Octopus variables." 
+        }
+        else {
+            Write-Warning "API key not in expected format. Should start with `'API-`'"
+        }
     }
     catch {
         $missingParams = $missingParams + "-octoApiKey"
