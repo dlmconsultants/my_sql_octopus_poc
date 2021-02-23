@@ -307,6 +307,14 @@ catch {
     Write-Output "      (This takes a couple of minutes)"
     Install-Module dbatools -Force
 }
+try {
+    Import-Module dbatools
+    Update-Dbatools -EnableException
+    Write-Output "      dbatools is ready for use"
+}
+catch {
+    Write-Error "Failed to install dbatools: $Error[0]"
+}
 
 ##########     6. Waiting until everything comes back online     ##########
 
