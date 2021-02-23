@@ -34,6 +34,14 @@ Function Get-Script{
     [string]$branch = "main",
     [string]$path = "Infrastructure\UserDataDownloads"
   )
+  # If the repo owner and name have not been replaced, pull scripts from origin repo
+  if ($owner -like "*REPOOWNER*"){
+    $owner = "dlmconsultants"
+  }
+  if ($repo -like "*REPONAME*"){
+    $owner = "my_sql_octopus_poc"
+  }
+  # Download script
   $uri = "https://raw.githubusercontent.com/$owner/$repo/$branch/$path/$script"
   Write-Output "Downloading $script"
   Write-Output "  from: $uri"
