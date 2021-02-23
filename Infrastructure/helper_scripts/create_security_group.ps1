@@ -44,9 +44,10 @@ else {
     Write-Output "    Opening ports $requiredPorts on SecurityGroup $securityGroupName."
     try {  
         $ip1 = @{ IpProtocol="tcp"; FromPort="80"; ToPort="80"; IpRanges="0.0.0.0/0" } # Website hosting
-        $ip2 = @{ IpProtocol="tcp"; FromPort="3389"; ToPort="3389"; IpRanges="0.0.0.0/0" } # Remote Desktop
-        $ip3 = @{ IpProtocol="tcp"; FromPort="10933"; ToPort="10933"; IpRanges="0.0.0.0/0" } # Octopus Deploy
-        Grant-EC2SecurityGroupIngress -GroupName $securityGroupName -IpPermission @($ip1, $ip2, $ip3)
+        $ip2 = @{ IpProtocol="tcp"; FromPort="1433"; ToPort="1433"; IpRanges="0.0.0.0/0" } # SQL Server
+        $ip3 = @{ IpProtocol="tcp"; FromPort="3389"; ToPort="3389"; IpRanges="0.0.0.0/0" } # Remote Desktop
+        $ip4 = @{ IpProtocol="tcp"; FromPort="10933"; ToPort="10933"; IpRanges="0.0.0.0/0" } # Octopus Deploy
+        Grant-EC2SecurityGroupIngress -GroupName $securityGroupName -IpPermission @($ip1, $ip2, $ip3, $ip4)
         Write-Output "      Ports opened."
     }
     catch {
