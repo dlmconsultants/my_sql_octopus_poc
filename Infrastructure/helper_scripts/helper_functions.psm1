@@ -303,6 +303,13 @@ function Test-Tentacle {
         [Parameter(Mandatory=$true)][System.Collections.IDictionary]$header        
     )
     $URL = "https://" + $ip + ":10933/"
+    
+    # temp logging: to delete
+    Write-Verbose "Executing the API call: ((Invoke-WebRequest (`"$octoUrl/api/machines`") -Headers `$header -UseBasicParsing).content | ConvertFrom-Json).items"
+    Write-Verbose "Header is:"
+    Write-Verbose $header
+    # end of temp logging
+
     $allMachines = ((Invoke-WebRequest ("$octoUrl/api/machines") -Headers $header -UseBasicParsing).content | ConvertFrom-Json).items
     if ($allMachines.Uri -contains $URL){
         return $true
