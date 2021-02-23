@@ -41,6 +41,7 @@ while ($sqlOnline -like $false){
     $sqlOnline = $true
   }
   catch {
+    Write-output $Error[0]
     Write-Output "        $time seconds: Waiting for SQL Server to come online..."
   }
   if ($time -gt 1200){
