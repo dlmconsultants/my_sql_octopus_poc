@@ -297,7 +297,7 @@ if ($deployJump){
     Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData $jumpServerUserData  
 }
 
-########   5. Installing dbatools so that we cna ping SQL Server to see when it comes online   ########    ##########
+########   5. Installing dbatools so that we can ping SQL Server to see when it comes online   ########    ##########
 
 try {
     Import-Module dbatools
