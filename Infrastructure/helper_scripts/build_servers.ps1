@@ -74,7 +74,7 @@ if ($octoUrl -like ""){
 # Octopus API Key
 if ($octoApiKey -like ""){
     try {
-        $octoApiKey = $OctopusParameters["API_KEY"]
+        $octoApiKey = $OctopusParameters["OCTOPUS_APIKEY"]
     }
     catch {
         Write-Error "Please provide a value for -octoApiKey"
