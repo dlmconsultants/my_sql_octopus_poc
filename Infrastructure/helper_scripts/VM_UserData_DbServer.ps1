@@ -39,7 +39,7 @@ Function Get-Script{
     $owner = "dlmconsultants"
   }
   if ($repo -like "*REPONAME*"){
-    $owner = "my_sql_octopus_poc"
+    $repo = "my_sql_octopus_poc"
   }
   # Download script
   $uri = "https://raw.githubusercontent.com/$owner/$repo/$branch/$path/$script"
