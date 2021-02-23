@@ -16,7 +16,8 @@ param(
     $timeout = 1800, # 30 minutes, in seconds
     $octoApiKey = "",
     $sqlOctoPassword = "",
-    $octoUrl = ""
+    $octoUrl = "",
+    $environment = ""
 )
 
 ##########     1. Initialising variables etc     ##########
@@ -37,6 +38,8 @@ $ami = $image.Value
 Write-Output "    Windows_Server-2019-English-Full-Base image in this AWS region has ami: $ami"
 
 Write-Output "    Auto-filling missing parameters from Octopus System Variables..."
+
+# Role prefix
 $rolePrefix = ""
 try {
     $rolePrefix = $OctopusParameters["Octopus.Project.Name"]
@@ -45,14 +48,19 @@ try {
 catch {
     $rolePrefix = "my_sql_octopus_poc"
 }
-$environment = "Environment unknown"
-try {
-    $environment = $OctopusParameters["Octopus.Environment.Name"]
-    Write-Output "      Detected Octopus Environment Name: $environment"
+
+# Environment Name
+if ($environment -like ""){
+    try {
+        $environment = $OctopusParameters["Octopus.Environment.Name"]
+        Write-Output "      Detected Octopus Environment Name: $environment"
+    }
+    catch {
+        Write-Warning "No value provided for environment. Setting it to: $environment"
+    }
 }
-catch {
-    Write-Warning "No value provided for environment. Setting it to: $environment"
-}
+
+# Octopus URL
 if ($octoUrl -like ""){
     try {
         $octoUrl = $OctopusParameters["Octopus.Web.ServerUri"]
@@ -62,6 +70,8 @@ if ($octoUrl -like ""){
         Write-Error "Please provide a value for -octoUrl"
     }
 }
+
+# Octopus API Key
 if ($octoApiKey -like ""){
     try {
         $octoApiKey = $OctopusParameters["API_KEY"]
@@ -70,6 +80,8 @@ if ($octoApiKey -like ""){
         Write-Error "Please provide a value for -octoApiKey"
     }
 }
+
+# Octopus SQL Server Password
 $checkSql = $true
 if ($sqlOctoPassword -like ""){
     try {
@@ -84,6 +96,8 @@ if ($sqlOctoPassword -like ""){
 else {
     [SecureString]$sqlOctoPassword = $sqlOctoPassword | ConvertTo-SecureString -AsPlainText -Force # The param should really have been a SecureString to begin with...
 }
+
+# Infering the roles and API header
 $webServerRole = "$rolePrefix-WebServer"
 $dbServerRole = "$rolePrefix-DbServer"
 $dbJumpboxRole = "$rolePrefix-DbJumpbox"
