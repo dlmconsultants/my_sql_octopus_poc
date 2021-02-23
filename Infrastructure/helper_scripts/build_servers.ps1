@@ -73,12 +73,16 @@ if ($octoApiKey -like ""){
 $checkSql = $true
 if ($sqlOctoPassword -like ""){
     try {
-        $sqlOctoPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
+        [SecureString]$sqlOctoPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
     }
     catch {
         Write-Warning "No octopus password provided for SQL Server. Skipping check to see if/when SQL Server comes online"
+        [SecureString]$sqlOctoPassword = "The wrong password!" | ConvertTo-SecureString -AsPlainText -Force # Need to convert to secure string to avoid errors
         $checkSql = $false
     }
+}
+else {
+    [SecureString]$sqlOctoPassword = $sqlOctoPassword | ConvertTo-SecureString -AsPlainText -Force # The param should really have been a SecureString to begin with...
 }
 $webServerRole = "$rolePrefix-WebServer"
 $dbServerRole = "$rolePrefix-DbServer"
