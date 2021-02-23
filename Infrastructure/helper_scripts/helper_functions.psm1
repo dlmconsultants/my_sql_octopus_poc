@@ -190,6 +190,7 @@ Function Start-Servers {
         [Parameter(Mandatory=$true)]$ami,
         [Parameter(Mandatory=$true)]$environment,
         [Parameter(Mandatory=$true)]$encodedUserData,
+        $instanceType = "t2.micro",
         $required = 1
     )
     $existingServers = Get-Servers -role $role -value $value -includePending
