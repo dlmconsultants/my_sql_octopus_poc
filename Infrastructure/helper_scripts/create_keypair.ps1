@@ -5,9 +5,9 @@ param(
 
 $ErrorActionPreference = "Stop"  
 
-$keyPairExists = $false
-$date = Get-Date -Format "yyyy-MM-dd_HH-mm-ss_K" | ForEach-Object { $_ -replace ":", "." }
+$newKeyPairRequired = $false
 
+$date = Get-Date -Format "yyyy-MM-dd_HH-mm-ss_K" | ForEach-Object { $_ -replace ":", "." }
 $keyPairPath = "$keyPairDir\$keyPairName.pem"
 
 # Checking to see if the keypair already exists in EC2
