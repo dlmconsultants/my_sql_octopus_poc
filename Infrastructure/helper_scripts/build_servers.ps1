@@ -97,11 +97,10 @@ else {
     [SecureString]$sqlOctoPassword = $sqlOctoPassword | ConvertTo-SecureString -AsPlainText -Force # The param should really have been a SecureString to begin with...
 }
 
-# Infering the roles and API header
+# Infering the roles
 $webServerRole = "$rolePrefix-WebServer"
 $dbServerRole = "$rolePrefix-DbServer"
 $dbJumpboxRole = "$rolePrefix-DbJumpbox"
-$octoApiHeader = @{ "X-Octopus-ApiKey" = $octoApiKey }
 
 # Reading and encoding the VM startup scripts
 $webServerUserData = Get-UserData -fileName "VM_UserData_WebServer.ps1" -octoUrl $octoUrl -role $webServerRole
@@ -178,7 +177,7 @@ if ($killJump){
         Write-Output "        Removing EC2 instance $id at $ip."
         Remove-EC2Instance -InstanceId $id -Force | out-null
         Write-Output "        Removing Octopus Target for $ip."
-        Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -octoApiHeader $octoApiHeader                
+        Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -apiKey $octoApiKey                
     }
 }
 if ($webServersToKill -gt 0){
@@ -190,7 +189,7 @@ if ($webServersToKill -gt 0){
         Write-Output "        Removing EC2 instance $id at $ip."
         Remove-EC2Instance -InstanceId $id -Force | out-null
         Write-Output "        Removing Octopus Target for $ip."
-        Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -octoApiHeader $octoApiHeader                
+        Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -apiKey $octoApiKey                 
     }
 }
 
@@ -409,7 +408,7 @@ While (-not $allVmsConfigured){
     # Checking whether any new tentacles have come online yet
     $pendingTentacles = $vms.Select("tentacle_listening like '$false'")
     forEach ($ip in $pendingTentacles.ip){
-        $tentacleDeployed = Test-Tentacle -ip $ip -octoUrl $octoUrl -header $octoApiHeader
+        $tentacleDeployed = Test-Tentacle -ip $ip -octoUrl $octoUrl -ApiKey $octoApiKey
         if ($tentacleDeployed){
             $thisVm = ($vms.Select("ip = '$ip'"))
             $thisVm[0]["tentacle_listening"] = $true

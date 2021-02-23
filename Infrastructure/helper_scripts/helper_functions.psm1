@@ -252,13 +252,15 @@ function Remove-OctopusMachine {
     param (
         $octoUrl,
         $ip,
-        $octoApiHeader
+        $apiKey
     )
-    $allMachines = ((Invoke-WebRequest ($octoUrl + "/api/machines") -Headers $octoApiHeader -UseBasicParsing).content | ConvertFrom-Json).items
+    $header = @{ "X-Octopus-ApiKey" = $apiKey }
+
+    $allMachines = ((Invoke-WebRequest ($octoUrl + "/api/machines") -Headers $header -UseBasicParsing).content | ConvertFrom-Json).items
     $targetMachine = $allMachines | Where-Object {$_.Uri -like "*$ip*"}
     $id = $targetMachine.Id
     try {
-        Invoke-RestMethod -Uri "$octoUrl/api/machines/$id" -Headers $octoApiHeader -Method Delete
+        Invoke-RestMethod -Uri "$octoUrl/api/machines/$id" -Headers $header -Method Delete
     }
     catch {
         return "Failed to delete Octopus Target with id: $id. Perhaps it doesn't exits?"
@@ -300,10 +302,11 @@ function Test-Tentacle {
     param (
         [Parameter(Mandatory=$true)][string]$ip,
         [Parameter(Mandatory=$true)][string]$octoUrl,
-        [Parameter(Mandatory=$true)][System.Collections.IDictionary]$header        
+        [Parameter(Mandatory=$true)]$apiKey        
     )
     $URL = "https://" + $ip + ":10933/"
-    
+    $header = @{ "X-Octopus-ApiKey" = $apiKey }
+
     # temp logging: to delete
     Write-Verbose "Executing the API call: ((Invoke-WebRequest (`"$octoUrl/api/machines`") -Headers `$header -UseBasicParsing).content | ConvertFrom-Json).items"
     Write-Verbose "Header is:"
