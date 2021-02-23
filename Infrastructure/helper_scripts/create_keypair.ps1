@@ -15,9 +15,6 @@ try {
     Get-EC2KeyPair -KeyName $keyPairName | out-null
     Write-Output "    Keypair already exists in EC2."
     $newKeyPairRequired = $false
-    if (-not (Test-Path $keyPairPath)){
-        Write-Warning "No private key for $keyPairName found at $keyPairDir."
-    }
 }
 catch {
     Write-Output "    Keypair does not exist in EC2. Will attempt to create it."
