@@ -36,7 +36,7 @@ else {
 }
 
 # Create the SecurityGroup (if it does not already exist)
-$requiredPorts = @(80, 3389, 10933)
+$requiredPorts = @(80, 1433, 3389, 10933)
 if (Test-SecurityGroupPorts -groupName $securityGroupName -requiredPorts $requiredPorts){
     Write-Output "    SecurityGroup $securityGroupName is already open on ports $requiredPorts."
 } 
