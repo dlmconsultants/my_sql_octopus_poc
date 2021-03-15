@@ -22,26 +22,22 @@ catch {
 }
 
 # If it's not already in EC2, we need to create it
-if ($newKeyPairRequired){
-    # We need to create a new keypair
-    if (Test-Path $keyPairPath){
-        # Keypair deleted in EC2, but a private key is hanging around on the local machine.
-        # It can probably be deleted, but just to be safe we'll archive it instead.
-        Write-Warning "Stale keypair exists at: $keyPairPath"
+if ($newKeyPairRequired){   
+    try {
+        # Create the new keypair
+        Write-Output "    Creating keypair $keyPairName."
+        New-EC2KeyPair -KeyName $keyPairName | out-null
+    }
+    catch {
+        Write-Output "    Failed to create keypair $keyPairName. It's possible that another process has created it."
+    }
 
-        $archiveDir = "$keyPairDir\archive"
-        $archivedKeyPairName = "$keyPairName-archived_at_$date.pem"
-        $archiveFile = "$archiveDir\$archivedKeyPairName"
-
-        Write-Output "    Archiving private key for keypair $keyPairName to: $archiveFile"
-        Rename-Item -Path $keyPairPath -NewName $archivedKeyPairName
-        if (-not (Test-Path $archiveDir)){
-            New-Item -ItemType "directory" -Path $archiveDir
-        }
-        Move-Item -Path "$keyPairDir\$archivedKeyPairName" -Destination $archiveFile | out-null
-    } 
-    
-    # Creating the new keypair
-    Write-Output "    Creating keypair $keyPairName and saving private key to $keyPairPath"
-    (New-EC2KeyPair -KeyName $keyPairName).KeyMaterial | Out-File -Encoding ascii -FilePath $keyPairPath
+    # Verify that the keypair now exists in EC2
+    try {
+        Get-EC2KeyPair -KeyName $keyPairName | out-null
+        Write-Output "    Keypair $keyPairName now exists."
+    }
+    catch {
+        Write-Warning "    Keypair $keyPairName does not exist."
+    }
 }
