@@ -15,7 +15,7 @@ param(
     $numWebServers = 1,
     $timeout = 1800, # 30 minutes, in seconds
     $octoApiKey = "",
-    $sqlOctoPassword = "",
+    $octopusSqlPassword = "",
     $octoUrl = "",
     $environment = ""
 )
@@ -83,18 +83,18 @@ if ($octoApiKey -like ""){
 
 # Octopus SQL Server Password
 $checkSql = $true
-if ($sqlOctoPassword -like ""){
+if ($octopusSqlPassword -like ""){
     try {
-        [SecureString]$sqlOctoPassword = $OctopusParameters["sqlOctopusPassword"] | ConvertTo-SecureString -AsPlainText -Force
+        [SecureString]$octopusSqlPassword = $OctopusParameters["OCTOPUS_SQL_PASSWORD"] | ConvertTo-SecureString -AsPlainText -Force
     }
     catch {
         Write-Warning "No octopus password provided for SQL Server. Skipping check to see if/when SQL Server comes online"
-        [SecureString]$sqlOctoPassword = "The wrong password!" | ConvertTo-SecureString -AsPlainText -Force # Need to convert to secure string to avoid errors
+        [SecureString]$octopusSqlPassword = "The wrong password!" | ConvertTo-SecureString -AsPlainText -Force # Need to convert to secure string to avoid errors
         $checkSql = $false
     }
 }
 else {
-    [SecureString]$sqlOctoPassword = $sqlOctoPassword | ConvertTo-SecureString -AsPlainText -Force # The param should really have been a SecureString to begin with...
+    [SecureString]$octopusSqlPassword = $octopusSqlPassword | ConvertTo-SecureString -AsPlainText -Force # The param should really have been a SecureString to begin with...
 }
 
 # Infering the roles
@@ -387,7 +387,7 @@ Write-Output "         - SQL Server install:        600-750 seconds"
 # Waiting to see if they all come online
 $allVmsConfigured = $false
 $runningWarningGiven = $false
-$sqlCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "octopus", $sqlOctoPassword
+$sqlCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "octopus", $octopusSqlPassword
 $sqlDeployed = $false
 
 While (-not $allVmsConfigured){
