@@ -1,19 +1,18 @@
 param(
     $awsAccessKey = "",
     $awsSecretKey = "",
-    $defaulAwsRegion = "eu-west-1" # Other carbon neutral regions are listed here: https://aws.amazon.com/about-aws/sustainability/
+    $defaulAwsRegion = "" # Carbon neutral regions are listed here: https://aws.amazon.com/about-aws/sustainability/
 )
 
 $ErrorActionPreference = "Stop"  
 
-# Setting default values for parameters
-
+# Setting default values for AWS access parameters
 $missingParams = @()
 
 if ($awsAccessKey -like ""){
     try {
         $awsAccessKey = $OctopusParameters["AWS_ACCOUNT.AccessKey"]
-        Write-Output "Found value for awsAccessKey from Octopus variables." 
+        Write-Output "Found value for awsAccessKey in Octopus variables." 
     }
     catch {
         Write-Warning "Did not find value for awsAccessKey from Octopus variables!" 
@@ -27,7 +26,23 @@ if ($awsSecretKey -like ""){
         Write-Output "Found value for awsSecretKey from Octopus variables." 
     }
     catch {
-        Write-Warning "Did not find value for awsSecretKey from Octopus variables!" 
+        Write-Warning "Did not find value for awsSecretKey in Octopus variables!" 
+        $missingParams = $missingParams + "-awsSecretKey"
+    }
+}
+
+if ($defaulAwsRegion -like ""){
+    try {
+        $defaulAwsRegion = $OctopusParameters["DEFAULT_AWS_REGION"]
+        Write-Output "Found value $defaulAwsRegion for DEFAULT_AWS_REGION from Octopus variables." 
+    }
+    catch {
+        $defaulAwsRegion = "eu-west-1"
+        Write-Output "Did not find value for DEFAULT_AWS_REGION in Octopus variables. Defaulting to $defaulAwsRegion." 
+        
+    }
+    if ($defaulAwsRegion -like ""){
+        Write-Warning "Something failed while setting the default AWS region."
         $missingParams = $missingParams + "-awsSecretKey"
     }
 }
