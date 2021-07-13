@@ -14,9 +14,6 @@ on:
     - 'Databases/AdventureWorks/**'
     - '.github/workflows/ssdt_build.yml'
   workflow_dispatch:     # Enables manual runs
-    inputs:
-      tags:
-        description: 'Manual run' 
   schedule:
     - cron:  '0 1 * * *' # runs at 1am every morning
                          # (useful for ensuring outside factors don't break the build)
