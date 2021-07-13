@@ -1,7 +1,6 @@
 param(
     [Parameter(Mandatory)][ValidateNotNullOrEmpty()]$OctoUrl,
     [Parameter(Mandatory)][ValidateNotNullOrEmpty()]$OctoApiKey
-    $defaulAwsRegion = "eu-west-1" # Other carbon neutral regions are listed here: https://aws.amazon.com/about-aws/sustainability/
 )
 
 $ErrorActionPreference = "Stop"  
