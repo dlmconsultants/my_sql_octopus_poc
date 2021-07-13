@@ -45,6 +45,14 @@ jobs:
     - name: Clone repo
       uses: actions/checkout@v2
   
+    - name: Validate GitHub secrets
+      env:
+        OCTOPUS_URL: ${{ secrets.OCTOPUS_URL }}
+        OCTOPUS_APIKEY: ${{ secrets.OCTOPUS_APIKEY }}        
+      run: |        
+        .\Infrastructure\helper_scripts\validate_github_secrets.ps1 -OctoUrl "${env:OCTOPUS_URL}" -OctoApiKey "${env:OCTOPUS_APIKEY}"
+      shell: powershell   
+
     - name: Set the version number      
       run: |        
         # The first two numbers come from versionprefix.txt

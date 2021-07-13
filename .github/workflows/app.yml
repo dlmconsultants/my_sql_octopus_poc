@@ -35,6 +35,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       
+    - name: Validate GitHub secrets
+      env:
+        OCTOPUS_URL: ${{ secrets.OCTOPUS_URL }}
+        OCTOPUS_APIKEY: ${{ secrets.OCTOPUS_APIKEY }}        
+      run: |        
+        .\Infrastructure\helper_scripts\validate_github_secrets.ps1 -OctoUrl "${env:OCTOPUS_URL}" -OctoApiKey "${env:OCTOPUS_APIKEY}"
+      shell: powershell 
+      
     # extract branch name
     - name: Extract branch name
       if: github.event_name != 'pull_request'
