@@ -43,3 +43,10 @@ if ($errors.Count -gt 0){
     }
     Write-Error $errorMsg
 }
+
+# Testing the URL and API key actually work with a basic API call
+Write-Output "Executing a simple API call to retrieve Octopus Spaces data to verify that we can authenticate against Octopus instance."
+$header = @{ "X-Octopus-ApiKey" = $OctoApiKey }
+$spaces = (Invoke-WebRequest $OctoUrl/api/spaces -Headers $header)
+Write-Verbose $spaces
+Write-Output "That seems to work. (Check verbose logs to see API call response)."
