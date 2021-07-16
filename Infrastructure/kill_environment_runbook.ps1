@@ -1,7 +1,7 @@
 param(
     $awsAccessKey = "",
     $awsSecretKey = "",
-    $defaulAwsRegion = "" # Carbon neutral regions are listed here: https://aws.amazon.com/about-aws/sustainability/
+    $awsRegion = "" # Carbon neutral regions are listed here: https://aws.amazon.com/about-aws/sustainability/
 )
 
 $ErrorActionPreference = "Stop"  
@@ -31,14 +31,14 @@ if ($awsSecretKey -like ""){
     }
 }
 
-if ($defaulAwsRegion -like ""){
+if ($awsRegion -like ""){
     try {
-        $defaulAwsRegion = $OctopusParameters["DEFAULT_AWS_REGION"]
-        Write-Output "Found value $defaulAwsRegion for DEFAULT_AWS_REGION from Octopus variables." 
+        $awsRegion = $OctopusParameters["DEFAULT_AWS_REGION"]
+        Write-Output "Found value $awsRegion for DEFAULT_AWS_REGION from Octopus variables." 
     }
     catch {
         $defaulAwsRegion = "eu-west-1"
-        Write-Output "Did not find value for DEFAULT_AWS_REGION in Octopus variables. Defaulting to $defaulAwsRegion." 
+        Write-Output "Did not find value for DEFAULT_AWS_REGION in Octopus variables. Defaulting to $awsRegion." 
         
     }
     if ($defaulAwsRegion -like ""){
@@ -66,8 +66,8 @@ Write-Output "*"
 
 # Configure your default profile
 Write-Output "Executing .\helper_scripts\configure_default_aws_profile.ps1..."
-Write-Output "  Parameters: -AwsAccessKey $awsAccessKey -AwsSecretKey *** -DefaulAwsRegion $defaulAwsRegion"
-& $PSScriptRoot\helper_scripts\configure_default_aws_profile.ps1 -AwsAccessKey $awsAccessKey -AwsSecretKey $awsSecretKey -DefaulAwsRegion $defaulAwsRegion
+Write-Output "  Parameters: -AwsAccessKey $awsAccessKey -AwsSecretKey *** -AwsRegion $awsRegion"
+& $PSScriptRoot\helper_scripts\configure_default_aws_profile.ps1 -awsAccessKey $awsAccessKey -awsSecretKey $awsSecretKey -awsRegion $awsRegion
 Write-Output "*"
 
 # Creates the VMs

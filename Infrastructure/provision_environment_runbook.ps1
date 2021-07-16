@@ -116,7 +116,7 @@ Write-Output "*"
 # Configure your default profile
 Write-Output "Executing .\helper_scripts\configure_default_aws_profile.ps1..."
 Write-Output "  Parameters: -AwsAccessKey $awsAccessKey -AwsSecretKey *** -awsRegion $awsRegion"
-& $PSScriptRoot\helper_scripts\configure_default_aws_profile.ps1 -AwsAccessKey $awsAccessKey -AwsSecretKey $awsSecretKey -awsRegion $awsRegion
+& $PSScriptRoot\helper_scripts\configure_default_aws_profile.ps1 -awsAccessKey $awsAccessKey -awsSecretKey $awsSecretKey -awsRegion $awsRegion
 Write-Output "*"
 
 # Create Keypair
