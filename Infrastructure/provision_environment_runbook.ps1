@@ -46,7 +46,7 @@ if ($awsSecretKey -like ""){
 
 if ($defaulAwsRegion -like ""){
     try {
-        $defaulAwsRegion = $OctopusParameters["DEFAULT_AWS_REGION"]
+        $defaulAwsRegion = $OctopusParameters["AWS_REGION"]
         Write-Output "Found value $defaulAwsRegion for DEFAULT_AWS_REGION from Octopus variables." 
     }
     catch {
