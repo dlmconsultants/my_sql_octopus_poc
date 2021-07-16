@@ -1,7 +1,7 @@
 param(
     $awsAccessKey = "",
     $awsSecretKey = "",
-    $defaulAwsRegion = "", # Carbon neutral regions are listed here: https://aws.amazon.com/about-aws/sustainability/
+    $awsRegion = "", # Carbon neutral regions are listed here: https://aws.amazon.com/about-aws/sustainability/
     $securityGroupName = "my_sql_octopus_poc",
     $numWebServers = 1,
     $instanceType = "t2.micro", # 1 vCPU, 1GiB Mem, free tier elligible: https://aws.amazon.com/ec2/instance-types/
@@ -44,17 +44,17 @@ if ($awsSecretKey -like ""){
     }
 }
 
-if ($defaulAwsRegion -like ""){
+if ($awsRegion -like ""){
     try {
-        $defaulAwsRegion = $OctopusParameters["AWS_REGION"]
-        Write-Output "Found value $defaulAwsRegion for DEFAULT_AWS_REGION from Octopus variables." 
+        $awsRegion = $OctopusParameters["AWS_REGION"]
+        Write-Output "Found value $awsRegion for DEFAULT_AWS_REGION from Octopus variables." 
     }
     catch {
-        $defaulAwsRegion = "eu-west-1"
-        Write-Output "Did not find value for DEFAULT_AWS_REGION in Octopus variables. Defaulting to $defaulAwsRegion." 
+        $awsRegion = "eu-west-1"
+        Write-Output "Did not find value for DEFAULT_AWS_REGION in Octopus variables. Defaulting to $awsRegion." 
         
     }
-    if ($defaulAwsRegion -like ""){
+    if ($awsRegion -like ""){
         Write-Warning "Something failed while setting the default AWS region."
         $missingParams = $missingParams + "-awsSecretKey"
     }
@@ -115,8 +115,8 @@ Write-Output "*"
 
 # Configure your default profile
 Write-Output "Executing .\helper_scripts\configure_default_aws_profile.ps1..."
-Write-Output "  Parameters: -AwsAccessKey $awsAccessKey -AwsSecretKey *** -DefaulAwsRegion $defaulAwsRegion"
-& $PSScriptRoot\helper_scripts\configure_default_aws_profile.ps1 -AwsAccessKey $awsAccessKey -AwsSecretKey $awsSecretKey -DefaulAwsRegion $defaulAwsRegion
+Write-Output "  Parameters: -AwsAccessKey $awsAccessKey -AwsSecretKey *** -awsRegion $awsRegion"
+& $PSScriptRoot\helper_scripts\configure_default_aws_profile.ps1 -AwsAccessKey $awsAccessKey -AwsSecretKey $awsSecretKey -awsRegion $awsRegion
 Write-Output "*"
 
 # Create Keypair
