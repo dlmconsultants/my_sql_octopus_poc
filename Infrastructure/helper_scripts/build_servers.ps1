@@ -103,8 +103,8 @@ $dbServerRole = "$rolePrefix-DbServer"
 $dbJumpboxRole = "$rolePrefix-DbJumpbox"
 
 # Reading and encoding the VM startup scripts
-$webServerUserData = Get-UserData -fileName "VM_UserData_WebServer.ps1" -octoUrl $octoUrl -role $webServerRole
-$dbServerUserData = Get-UserData -fileName "VM_UserData_DbServer.ps1" -octoUrl $octoUrl -role $dbServerRole
+$webServerUserData = Get-UserData -fileName "VM_UserData_WebServer.ps1" -octoUrl $octoUrl -role $webServerRole -environment $environment
+$dbServerUserData = Get-UserData -fileName "VM_UserData_DbServer.ps1" -octoUrl $octoUrl -role $dbServerRole -environment $environment
 
 ##########     2. Determine how many machines need to be added/deleted     ##########
 
@@ -293,7 +293,7 @@ While (-not $allRunning){
 # Now we know the SQL Server IP, we can launch the jumpbox
 if ($deployJump){
     Write-Output "    Launching SQL Jumpbox"
-    $jumpServerUserData = Get-UserData -fileName "VM_UserData_DbJumpbox.ps1" -octoUrl $octoUrl -role $dbJumpboxRole -sql_ip $sqlIp
+    $jumpServerUserData = Get-UserData -fileName "VM_UserData_DbJumpbox.ps1" -octoUrl $octoUrl -role $dbJumpboxRole -sql_ip $sqlIp -environment $environment
     Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData $jumpServerUserData  
 }
 

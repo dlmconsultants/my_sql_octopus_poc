@@ -144,6 +144,7 @@ Function Get-UserData {
     param (
         $fileName,
         $octoUrl,
+        $environment,
         $role,
         $sql_ip = "unknown"
     )
@@ -157,7 +158,7 @@ Function Get-UserData {
     
     # replacing placeholder text
     $userData = $userData.replace("__OCTOPUSURL__",$octoUrl)
-    $userData = $userData.replace("__ENV__",$tagValue)
+    $userData = $userData.replace("__ENV__",$environment)
     $userData = $userData.replace("__ROLE__",$role)
     $userData = $userData.replace("__SQLSERVERIP__",$sql_ip)
 
@@ -179,7 +180,7 @@ Function Get-Servers {
     if($includePending){
         $acceptableStates = @("pending", "running")
     }
-    $instances = (Get-EC2Instance -Filter @{Name="tag:$role";Values=$environment}, @{Name="instance-state-name";Values=$acceptableStates}).Instances 
+    $instances = (Get-EC2Instance -Filter @{Name="tag:Role";Values=$role}, {Name="tag:Environment";Values=$environment}, @{Name="instance-state-name";Values=$acceptableStates}).Instances 
     return $instances
 }
 
