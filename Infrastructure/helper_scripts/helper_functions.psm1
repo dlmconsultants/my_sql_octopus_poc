@@ -199,15 +199,13 @@ Function Start-Servers {
         $NewInstance = New-EC2Instance -ImageId $ami -MinCount $required -MaxCount $required -InstanceType $instanceType -UserData $encodedUserData -KeyName my_sql_octopus_poc -SecurityGroup my_sql_octopus_poc -IamInstanceProfile_Name my_sql_octopus_poc
         # Tagging all the instances
         ForEach ($InstanceID  in ($NewInstance.Instances).InstanceId){
-            $Tags = @( @{key="Project";value="my_sql_octopus_poc"}, `
+            $tags = @( @{key="Project";value="my_sql_octopus_poc"}, `
                        @{key="StartupStatus";value="booting"}, `
                        @{key="Role";value=$role}, `
                        @{key="Environment";value=$environment} 
                     )
             
-            New-EC2Tag -Resources $( $InstanceID ) -Tags @(
-                @{ Key=$role; Value=$environment}
-            );
+            New-EC2Tag -Resources $( $InstanceID ) -Tags $tags
         }
     }    
 }
