@@ -115,7 +115,7 @@ if ($numOfInstancesToKill -ne 0){
     }
     
     # Verifying that all instances are dead
-    $remainingInstances = Get-Instances
+    $remainingInstances = Get-Servers -environment $octoEnvName -includePending
     $numOfInstancesToKill = $remainingInstances.Count
     Write-Output "    Number of remaining instances: $numOfInstancesToKill" 
 }
