@@ -49,21 +49,28 @@ Function Get-Script{
   Invoke-WebRequest -Uri $uri -OutFile ".\$script" -Verbose
 }
 
+Get-Script -script "helper_functions.psm1"
+Write-Output "Importing helper funtions"
+Import-Module -Name "$PSScriptRoot\helper_functions.psm1" -Force
+
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_users.ps1"
+Update-StatupStatus -status "1/4-CreatingLocalUsers"
 Write-Output "Executing ./setup_users.ps1"
 ./setup_users.ps1
 
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_iis.ps1"
+Update-StatupStatus -status "2/4-SettingUpIIS"
 Write-Output "Executing ./setup_iis.ps1"
 ./setup_iis.ps1
 
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_dotnet_core.ps1"
+Update-StatupStatus -status "3/4-SettingUpIIS"
 Write-Output "Executing ./setup_dotnet_core.ps1"
 ./setup_dotnet_core.ps1
 
@@ -74,8 +81,11 @@ $registerInRoles = "__ROLE__"
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "install_tentacle.ps1"
+Update-StatupStatus -status "4/4-SettingUpTentacle"
 Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
 ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
+
+Update-StatupStatus -status "Ready"
 
 $date = Get-Date
 Write-Output "VM_UserData startup script completed at $date."

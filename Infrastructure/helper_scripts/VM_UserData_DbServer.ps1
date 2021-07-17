@@ -49,10 +49,15 @@ Function Get-Script{
   Invoke-WebRequest -Uri $uri -OutFile ".\$script" -Verbose
 }
 
+Get-Script -script "helper_functions.psm1"
+Write-Output "Importing helper funtions"
+Import-Module -Name "$PSScriptRoot\helper_functions.psm1" -Force
+
 # Setting up users first, so that if anything goes wrong later, folks can RDP in to troubleshoot
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_users.ps1"
+Update-StatupStatus -status "1/4-CreatingLocalUsers"
 Write-Output "Executing ./setup_users.ps1"
 ./setup_users.ps1
 
@@ -60,6 +65,7 @@ Write-Output "Executing ./setup_users.ps1"
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "install_choco.ps1"
+Update-StatupStatus -status "2/4-InstallingChoco"
 Write-Output "Executing ./install_choco.ps1"
 ./install_choco.ps1
 
@@ -69,6 +75,7 @@ Write-Output "*** $date ***"
 Write-Output "Downloading ConfigurationFile.ini and install_sql_with_choco.ps1"
 Get-Script -script "ConfigurationFile.ini"
 Get-Script -script "install_sql_server.ps1"
+Update-StatupStatus -status "3/4-InstallingSqlServer"
 Write-Output "Executing ./install_sql_server.ps1"
 ./install_sql_server.ps1
 
@@ -76,8 +83,11 @@ Write-Output "Executing ./install_sql_server.ps1"
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "install_ssms.ps1"
+Update-StatupStatus -status "4/4-InstallingSSMS"
 Write-Output "Executing ./install_ssms.ps1"
 ./install_ssms.ps1
+
+Update-StatupStatus -status "Ready"
 
 $date = Get-Date
 Write-Output "VM_UserData startup script completed at $date."

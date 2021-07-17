@@ -49,10 +49,15 @@ Function Get-Script{
   Invoke-WebRequest -Uri $uri -OutFile ".\$script" -Verbose
 }
 
+Get-Script -script "helper_functions.psm1"
+Write-Output "Importing helper funtions"
+Import-Module -Name "$PSScriptRoot\helper_functions.psm1" -Force
+
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_users.ps1"
 Write-Output "Executing ./setup_users.ps1"
+Update-StatupStatus -status "1/6-CreatingLocalUsers"
 ./setup_users.ps1
 
 $octopusServerUrl = "__OCTOPUSURL__"
@@ -63,6 +68,7 @@ $sqlServerIp = "__SQLSERVERIP__"
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "install_tentacle.ps1"
+Update-StatupStatus -status "2/6-InstallingTentacle"
 Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
 ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
 
@@ -73,6 +79,7 @@ set-location "$startupDir\$scriptsDir"
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_sql_server.ps1"
+Update-StatupStatus -status "3/6-SettingUpSqlServer"
 Write-Output "Executing ./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp"
 ./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp
 
@@ -80,6 +87,7 @@ Write-Output "Executing ./setup_sql_server.ps1 -tag $registerInRoles -value $reg
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "install_jumpbox_ps_modules.ps1"
+Update-StatupStatus -status "4/6-InstallingJumpboxModules"
 Write-Output "Executing ./install_jumpbox_ps_modules.ps1"
 ./install_jumpbox_ps_modules.ps1
 
@@ -87,14 +95,18 @@ Write-Output "Executing ./install_jumpbox_ps_modules.ps1"
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "install_choco.ps1"
+Update-StatupStatus -status "5/6-InstallingChoco"
 Write-Output "Executing ./install_choco.ps1"
 ./install_choco.ps1
 
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "install_ssms.ps1"
+Update-StatupStatus -status "6/6-InstallingSSMS"
 Write-Output "Executing ./install_ssms.ps1"
 ./install_ssms.ps1
+
+Update-StatupStatus -status "Ready"
 
 $date = Get-Date
 Write-Output "VM_UserData startup script completed at $date."
