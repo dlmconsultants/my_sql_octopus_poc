@@ -44,20 +44,13 @@ if ($awsSecretKey -like ""){
     }
 }
 
+$awsRegion = $OctopusParameters["AWS_REGION"]
 if ($awsRegion -like ""){
-    try {
-        $awsRegion = $OctopusParameters["AWS_REGION"]
-        Write-Output "Found value $awsRegion for DEFAULT_AWS_REGION from Octopus variables." 
-    }
-    catch {
-        $awsRegion = "eu-west-1"
-        Write-Output "Did not find value for DEFAULT_AWS_REGION in Octopus variables. Defaulting to $awsRegion." 
-        
-    }
-    if ($awsRegion -like ""){
-        Write-Warning "Something failed while setting the default AWS region."
-        $missingParams = $missingParams + "-awsSecretKey"
-    }
+    $awsRegion = "eu-west-1"
+    Write-Output "AWS_REGION not set in octopus variables. Defaulting to: $awsRegion" 
+}
+else {
+    Write-Output "Found value $awsRegion for AWS_REGION from Octopus variables." 
 }
 
 if ($missingParams.Count -gt 0){
