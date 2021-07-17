@@ -172,15 +172,26 @@ Function Get-UserData {
 # Helper function to get all the existing servers of a particular role
 Function Get-Servers {
     param (
-        $role,
-        $environment,
+        $role = "",
+        $environment = "",
         [switch]$includePending
     )
     $acceptableStates = "running"
     if($includePending){
         $acceptableStates = @("pending", "running")
     }
-    $instances = (Get-EC2Instance -Filter @{Name="tag:Role";Values=$role}, {Name="tag:Environment";Values=$environment}, @{Name="instance-state-name";Values=$acceptableStates}).Instances 
+
+    $filter = @( @{Name="instance-state-name";Values=$acceptableStates} )
+
+    if ($role -notlike ""){
+        $filter += @{Name="tag:Role";Values=$role}
+    }
+    
+    if ($environment -notlike ""){
+        $filter += @{Name="tag:Environment";Values=$environment}
+    }
+
+    $instances = (Get-EC2Instance -Filter $filter).Instances
     return $instances
 }
 

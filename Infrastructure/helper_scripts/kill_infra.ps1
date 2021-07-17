@@ -8,6 +8,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Importing helper functions
+Import-Module -Name "$PSScriptRoot\helper_functions.psm1" -Force
+
 # Setting default values for parameters
 
 $missingParams = @()
@@ -85,27 +88,6 @@ else {
     Write-Output "      Environment Id for $octoEnvName is: $octoEnvId"
 }
 
-function Get-Instances {
-    # Using AWS PowerShell to find target instances
-    $targetStates = @("pending", "running")
-    $allTags = Get-EC2Tag
-    $allProjectTags = @()
-    ForEach ($tag in $allTags){
-        if ($tag.Key -like "$project-*"){
-            $allProjectTags += $tag.Key
-        }
-    }
-    $uniqueProjectTags = $allProjectTags | Select-Object -Unique
-    $allInstances = @()
-    ForEach ($uniqueTag in $uniqueProjectTags){
-        $instances = (Get-EC2Instance -Filter @{Name="tag:$uniqueTag";Values=$octoEnvName}, @{Name="instance-state-name";Values=$targetStates}).Instances
-        if ($instances.Count -ne 0){
-            $allInstances += $instances
-        }
-    }   
-    return $allInstances
-}
-
 function Get-Targets {
     # Calling the Octopus API to find target machines
     $environment = (Invoke-WebRequest "$octoUrl/api/environments/$octoEnvId" -Headers $octoApiHeader -UseBasicParsing).content | ConvertFrom-Json
@@ -120,7 +102,7 @@ function Get-Targets {
     return $targets
 }
 
-$instancesToKill = Get-Instances
+$instancesToKill = Get-Servers -environment $octoEnvName -includePending
 $numOfInstancesToKill = $instancesToKill.Count
 Write-Output "    Number of instances to kill: $numOfInstancesToKill" 
 
