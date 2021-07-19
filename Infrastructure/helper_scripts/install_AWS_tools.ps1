@@ -30,8 +30,8 @@ Import-Module -Name "$PSScriptRoot\helper_functions.psm1" -Force
 $requiredModules = @(
     "AWS.Tools.Common",
     "AWS.Tools.EC2",
-    "AWS.Tools.IdentityManagement"     #,
-    #"AWS.Tools.SimpleSystemsManagement",
+    "AWS.Tools.IdentityManagement",
+    "AWS.Tools.SimpleSystemsManagement"    #, # We use the Get-SSMLatestEC2Image cmdlet in build_servers.ps1 to determine the correct AMI for the Windows 2019 base image in the specified region
     #"AWS.Tools.SecretsManager"
 )
 $installedModules = @()
