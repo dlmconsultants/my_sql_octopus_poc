@@ -30,3 +30,7 @@ else {
 # This bit is re-runnable, so no need for a try catch etc
 Write-Output "    Registering $roleName with policy SecretsManagerReadWrite"
 Register-IAMRolePolicy -RoleName $roleName -PolicyArn arn:aws:iam::aws:policy/SecretsManagerReadWrite
+
+# This is an ugly hack. I should add the tagging stuff to a different role.
+Write-Output "    Registering $roleName with policy ResourceGroupsandTagEditorFullAccess"
+Register-IAMRolePolicy -RoleName $roleName -PolicyArn arn:aws:iam::aws:policy/ResourceGroupsandTagEditorFullAccess
