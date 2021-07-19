@@ -146,7 +146,8 @@ Function Get-UserData {
         $octoUrl,
         $environment,
         $role,
-        $sql_ip = "unknown"
+        $sql_ip = "unknown",
+        $octopusSqlPassword
     )
     
     # retrieving raw source code
@@ -161,6 +162,7 @@ Function Get-UserData {
     $userData = $userData.replace("__ENV__",$environment)
     $userData = $userData.replace("__ROLE__",$role)
     $userData = $userData.replace("__SQLSERVERIP__",$sql_ip)
+    $userData = $userData.replace("__OCTOPUS_SQL_PASSWORD__",$octopusSqlPassword)
 
     # Base 64 encoding the userdata file (required by EC2)
     $encodedDbUserData = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($userData))

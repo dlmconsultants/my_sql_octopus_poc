@@ -10,8 +10,15 @@ Function Update-StatupStatus {
     New-EC2Tag -Resource $instanceId -Tag $tag # Actually replaces, if tag already exists
 }
 
-
-
+# updating the sa password
+function get-secret(){
+    param ($secret)
+    $secretValue = Get-SECSecretValue -SecretId $secret
+    # values are returned in format: {"key":"value"}
+    $splitValue = $secretValue.SecretString -Split '"'
+    $cleanedSecret = $splitValue[3]
+    return $cleanedSecret
+  }
 
 
 

@@ -53,24 +53,32 @@ Get-Script -script "helper_functions.psm1"
 Write-Output "Importing helper funtions"
 Import-Module -Name "$startupDir\$scriptsDir\helper_functions.psm1" -Force
 
+# Checking the secrets exist and (where applicable) are in the correct format
+$date = Get-Date
+Write-Output "*** $date ***"
+Get-Script -script "validate_secrets.ps1"
+Update-StatupStatus -status "setup-1/5-validatingSecrets"
+Write-Output "Executing ./validate_secrets.ps1 -expectedOctopusSqlPassword ***"
+./validate_secrets.ps1 -expectedOctopusSqlPassword "__OCTOPUS_SQL_PASSWORD__"
+
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_users.ps1"
-Update-StatupStatus -status "setup-1/4-CreatingLocalUsers"
+Update-StatupStatus -status "setup-2/5-CreatingLocalUsers"
 Write-Output "Executing ./setup_users.ps1"
 ./setup_users.ps1
 
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_iis.ps1"
-Update-StatupStatus -status "setup-2/4-SettingUpIIS"
+Update-StatupStatus -status "setup-3/5-SettingUpIIS"
 Write-Output "Executing ./setup_iis.ps1"
 ./setup_iis.ps1
 
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_dotnet_core.ps1"
-Update-StatupStatus -status "setup-3/4-SettingUpIIS"
+Update-StatupStatus -status "setup-4/5-SettingUpIIS"
 Write-Output "Executing ./setup_dotnet_core.ps1"
 ./setup_dotnet_core.ps1
 
@@ -81,7 +89,7 @@ $registerInRoles = "__ROLE__"
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "install_tentacle.ps1"
-Update-StatupStatus -status "setup-4/4-SettingUpTentacle"
+Update-StatupStatus -status "setup-5/5-SettingUpTentacle"
 Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
 ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
 

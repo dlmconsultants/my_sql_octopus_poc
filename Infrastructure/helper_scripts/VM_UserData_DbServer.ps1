@@ -53,11 +53,19 @@ Get-Script -script "helper_functions.psm1"
 Write-Output "Importing helper funtions"
 Import-Module -Name "$startupDir\$scriptsDir\helper_functions.psm1" -Force
 
+# Checking the secrets exist and (where applicable) are in the correct format
+$date = Get-Date
+Write-Output "*** $date ***"
+Get-Script -script "validate_secrets.ps1"
+Update-StatupStatus -status "setup-1/5-validatingSecrets"
+Write-Output "Executing ./validate_secrets.ps1 -expectedOctopusSqlPassword ***"
+./validate_secrets.ps1 -expectedOctopusSqlPassword "__OCTOPUS_SQL_PASSWORD__"
+
 # Setting up users first, so that if anything goes wrong later, folks can RDP in to troubleshoot
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_users.ps1"
-Update-StatupStatus -status "setup-1/3-CreatingLocalUsers"
+Update-StatupStatus -status "setup-2/4-CreatingLocalUsers"
 Write-Output "Executing ./setup_users.ps1"
 ./setup_users.ps1
 
@@ -65,7 +73,7 @@ Write-Output "Executing ./setup_users.ps1"
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "install_choco.ps1"
-Update-StatupStatus -status "setup-2/3-InstallingChoco"
+Update-StatupStatus -status "setup-3/4-InstallingChoco"
 Write-Output "Executing ./install_choco.ps1"
 ./install_choco.ps1
 
@@ -75,7 +83,7 @@ Write-Output "*** $date ***"
 Write-Output "Downloading ConfigurationFile.ini and install_sql_with_choco.ps1"
 Get-Script -script "ConfigurationFile.ini"
 Get-Script -script "install_sql_server.ps1"
-Update-StatupStatus -status "setup-3/3-InstallingSqlServer"
+Update-StatupStatus -status "setup-4/4-InstallingSqlServer"
 Write-Output "Executing ./install_sql_server.ps1"
 ./install_sql_server.ps1
 

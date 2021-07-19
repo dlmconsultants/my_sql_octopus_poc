@@ -53,11 +53,19 @@ Get-Script -script "helper_functions.psm1"
 Write-Output "Importing helper funtions"
 Import-Module -Name "$startupDir\$scriptsDir\helper_functions.psm1" -Force
 
+# Checking the secrets exist and (where applicable) are in the correct format
+$date = Get-Date
+Write-Output "*** $date ***"
+Get-Script -script "validate_secrets.ps1"
+Update-StatupStatus -status "setup-1/5-validatingSecrets"
+Write-Output "Executing ./validate_secrets.ps1 -expectedOctopusSqlPassword ***"
+./validate_secrets.ps1 -expectedOctopusSqlPassword "__OCTOPUS_SQL_PASSWORD__"
+
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_users.ps1"
 Write-Output "Executing ./setup_users.ps1"
-Update-StatupStatus -status "setup-1/4-CreatingLocalUsers"
+Update-StatupStatus -status "setup-2/5-CreatingLocalUsers"
 ./setup_users.ps1
 
 $octopusServerUrl = "__OCTOPUSURL__"
@@ -68,7 +76,7 @@ $sqlServerIp = "__SQLSERVERIP__"
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "install_tentacle.ps1"
-Update-StatupStatus -status "setup-2/4-InstallingTentacle"
+Update-StatupStatus -status "setup-3/5-InstallingTentacle"
 Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
 ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
 
@@ -79,7 +87,7 @@ set-location "$startupDir\$scriptsDir"
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_sql_server.ps1"
-Update-StatupStatus -status "setup-3/4-SettingUpSqlServer"
+Update-StatupStatus -status "setup-4/5-SettingUpSqlServer"
 Write-Output "Executing ./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp"
 ./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp
 
@@ -87,7 +95,7 @@ Write-Output "Executing ./setup_sql_server.ps1 -tag $registerInRoles -value $reg
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "install_jumpbox_ps_modules.ps1"
-Update-StatupStatus -status "setup-4/4-InstallingJumpboxModules"
+Update-StatupStatus -status "setup-5/5-InstallingJumpboxModules"
 Write-Output "Executing ./install_jumpbox_ps_modules.ps1"
 ./install_jumpbox_ps_modules.ps1
 
