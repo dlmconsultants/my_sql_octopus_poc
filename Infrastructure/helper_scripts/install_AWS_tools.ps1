@@ -30,9 +30,9 @@ Import-Module -Name "$PSScriptRoot\helper_functions.psm1" -Force
 $requiredModules = @(
     "AWS.Tools.Common",
     "AWS.Tools.EC2",
-    "AWS.Tools.IdentityManagement",
-    "AWS.Tools.SimpleSystemsManagement",
-    "AWS.Tools.SecretsManager"
+    "AWS.Tools.IdentityManagement"     #,
+    #"AWS.Tools.SimpleSystemsManagement",
+    #"AWS.Tools.SecretsManager"
 )
 $installedModules = @()
 
