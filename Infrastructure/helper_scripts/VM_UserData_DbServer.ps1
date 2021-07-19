@@ -51,7 +51,7 @@ Function Get-Script{
 
 Get-Script -script "helper_functions.psm1"
 Write-Output "Importing helper funtions"
-Import-Module -Name "$scriptsDir\helper_functions.psm1" -Force
+Import-Module -Name "$startupDir\$scriptsDir\helper_functions.psm1" -Force
 
 # Setting up users first, so that if anything goes wrong later, folks can RDP in to troubleshoot
 $date = Get-Date

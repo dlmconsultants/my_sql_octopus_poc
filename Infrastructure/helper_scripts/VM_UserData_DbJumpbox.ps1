@@ -8,9 +8,6 @@ if ((test-path $startupDir) -ne $true) {
   New-Item -ItemType "Directory" -Path $startupDir
 }
 
-
-
-
 Set-Location $startupDir
 
 # If for whatever reason this doesn't work, check this file:
@@ -54,7 +51,7 @@ Function Get-Script{
 
 Get-Script -script "helper_functions.psm1"
 Write-Output "Importing helper funtions"
-Import-Module -Name "$scriptsDir\helper_functions.psm1" -Force
+Import-Module -Name "$startupDir\$scriptsDir\helper_functions.psm1" -Force
 
 $date = Get-Date
 Write-Output "*** $date ***"
