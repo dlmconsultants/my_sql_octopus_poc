@@ -74,7 +74,7 @@ if ($badSecretMessages -notlike ""){
     $errorMessage = "$errorMesage There are problems with the following secrets: $badSecretMessages"
 }
 if ($errorMessage -notlike ""){
-    Update-StatupStatus -status "FAILED-AwsSecretsValidationErrors-$errorMessage"
+    Update-StatupStatus -status "FAILED-AwsSecretsValidationErrors: $errorMessage"
     Write-Error "$errorMessage"
 } else {
     Write-Output "All required AWS Secrets are present and pass validation checks."
