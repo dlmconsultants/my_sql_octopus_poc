@@ -55,13 +55,13 @@ if ($missingSecrets.length -gt 0){
 if ("OCTOPUS_APIKEY" -notin $missingSecrets){
     # Checking API key starts with "API-"
     if ($octopus_apikey -notlike "API-*"){
-        Write-Warning "OCTOPUS_APIKEY in AWS is: $octopus_apikey"
+        Write-Warning "OCTOPUS_APIKEY in AWS Secrets is: $octopus_apikey"
         $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY does not start with ""API-"". "
     }
     # Cheking API key is correct length
     if (-not ($octopus_apikey.length -eq 36)){
         $OctoApiKeyLength = $octopus_apikey.length
-        Write-Warning  "OCTOPUS_APIKEY in AWS is: $octopus_apikey"
+        Write-Warning  "OCTOPUS_APIKEY in AWS Secrets is: $octopus_apikey"
         $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY is not the correct length (Expected: 36 chars, Actual: $OctoApiKeyLength). "
     }
     # Checking API key works
