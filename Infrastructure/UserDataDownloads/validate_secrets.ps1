@@ -77,6 +77,15 @@ if ("OCTOPUS_APIKEY" -notin $missingSecrets){
     }
 }
 
+if ("OCTOPUS_THUMBPRINT" -notin $missingSecrets){
+    # Checking Octopus Thumbprint is correct length (40 chars)
+    if (-not ($octopus_thumbprint.length -eq 40)){
+        $OctoThumbprintLength = $octopus_thumbprint.length
+        Write-Warning  "OCTOPUS_THUMBPRINT in AWS Secrets is: $OctoThumbprintLength"
+        $badSecretMessages = $badSecretMessages + "OCTOPUS_THUMBPRINT is not the correct length (Expected: 40 chars, Actual: $OctoThumbprintLength). "
+    } 
+}
+
 if ("OCTOPUS_SQL_PASSWORD" -notin $missingSecrets){
     # OCTOPUS_SQL_PASSWORD from Octopus is a SecureString, but OCTOPUS_SQL_PASSWORD from AWS is plaintext.
     # Need to decrypt the Octopus password to compare and verify a match
