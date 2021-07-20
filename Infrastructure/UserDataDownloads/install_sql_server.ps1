@@ -1,6 +1,3 @@
-
-
-
 # updating the sa user
 Write-Host "Getting the name of the current user to replace in the copy ini file."
 $user = "$env:UserDomain\$env:USERNAME"
