@@ -59,7 +59,7 @@ Write-Output "*** $date ***"
 Get-Script -script "validate_secrets.ps1"
 Update-StatupStatus -status "setup-1/5-validatingSecrets"
 Write-Output "Executing ./validate_secrets.ps1 -expectedOctopusSqlPassword *** -octopusUrl __OCTOPUSURL__"
-./validate_secrets.ps1 -expectedOctopusSqlPassword "__OCTOPUS_SQL_PASSWORD__ -octopusUrl __OCTOPUSURL__"
+./validate_secrets.ps1 -expectedOctopusSqlPassword __OCTOPUS_SQL_PASSWORD__ -octopusUrl "__OCTOPUSURL__"
 
 $date = Get-Date
 Write-Output "*** $date ***"

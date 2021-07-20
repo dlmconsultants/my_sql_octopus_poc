@@ -85,7 +85,7 @@ if ("OCTOPUS_SQL_PASSWORD" -notin $missingSecrets){
 
     if ($octopus_sql_password -notlike $decryptedExpectedOctopusSqlPassword){
         Write-Warning  "OCTOPUS_SQL_PASSWORD in AWS is: $octopus_sql_password"
-        Write-Warning  "OCTOPUS_SQL_PASSWORD in Octopus is: $expectedOctopusSqlPassword"
+        Write-Warning  "OCTOPUS_SQL_PASSWORD in Octopus is: $decryptedExpectedOctopusSqlPassword"
         $badSecretMessages = $badSecretMessages + "OCTOPUS_SQL_PASSWORD in Octopus and AWS do not match. "
     }
 }
