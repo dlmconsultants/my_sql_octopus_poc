@@ -62,8 +62,9 @@ if ("OCTOPUS_APIKEY" -notin $missingSecrets){
         $apikeyWorks = $true
     }
     catch {
-        Write-Warning  "OCTOPUS_APIKEY $octopus_apikey cannot authenticate against: $octopusUrl. "
-        $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY auth fails for: $octopusUrl. "    
+        $warning = "OCTOPUS_APIKEY $octopus_apikey cannot authenticate against: $octopusUrl. "
+        Write-Warning $warning
+        $badSecretMessages = $badSecretMessages + $warning 
     }
     if (-not $apikeyWorks){
         # Checking API key starts with "API-"
@@ -74,18 +75,21 @@ if ("OCTOPUS_APIKEY" -notin $missingSecrets){
         # Cheking API key is roughly the correct length (about 36 chars - not always exact)
         if (($octopus_apikey.length -gt 38) -or ($octopus_apikey.length -lt 34)){
             $OctoApiKeyLength = $octopus_apikey.length
-            Write-Warning "OCTOPUS_APIKEY is $OctoApiKeyLength chars (should be about 36). "
-            $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY is $OctoApiKeyLength chars (should be about 36). "
+            $warning = "OCTOPUS_APIKEY is $OctoApiKeyLength chars (should be about 36). "
+            Write-Warning $warning
+            $badSecretMessages = $badSecretMessages + $warning 
         }
     }
 }
 
+# Checking Thumbprint is correct length
 if ("OCTOPUS_THUMBPRINT" -notin $missingSecrets){
     # Checking Octopus Thumbprint is correct length (40 chars)
     if (-not ($octopus_thumbprint.length -eq 40)){
         $OctoThumbprintLength = $octopus_thumbprint.length
-        Write-Warning "OCTOPUS_THUMBPRINT is $OctoThumbprintLength chars (should be 40). "
-        $badSecretMessages = $badSecretMessages + "OCTOPUS_THUMBPRINT is $OctoThumbprintLength chars (should be 40). "
+        $warning = "OCTOPUS_THUMBPRINT is $OctoThumbprintLength chars (should be 40). "
+        Write-Warning $warning
+        $badSecretMessages = $badSecretMessages + $warning 
     } 
 }
 
