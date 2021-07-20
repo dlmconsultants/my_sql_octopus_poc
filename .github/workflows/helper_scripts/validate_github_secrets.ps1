@@ -16,37 +16,26 @@ else {
     $errors += "Octopus URL is not in the correct format (https://*.octopus.app/). "
 }
 
-# Checking Octopus API Key is in the correct format
-# (Must start with "API-")
-if ($octoApiKey -like "API-*"){
-    Write-Output "OCTOPUS_APIKEY is in the correct format: API-*"
-}
-else {
-    $errors += "OCTOPUS_APIKEY is not in the correct format (API-*). "
-}
-
-# Checking Octopus API Key is the correct length
-# (Must be 36 characters long)
-if ($octoApiKey.length -eq 36){
-    Write-Output "OCTOPUS_APIKEY is the correct length: 36 characters"
-}
-else {
-    $OctoApiKeyLength = $octoApiKey.length
-    $errors += "OCTOPUS_APIKEY is not the correct length (Expected: 36 chars, Actual: $OctoApiKeyLength). "
-}
-
-# If any of the checks failed, raise an error
-if ($errors.Count -gt 0){
-    $errorMsg = "The required GitHub secrets are not set up correctly: "
-    ForEach ($fail in $errors){
-        $errorMsg = $errorMsg + $fail
-    }
-    Write-Error $errorMsg
-}
-
-# Testing the URL and API key actually work with a basic API call
+# Checking API key works
 Write-Output "Executing a simple API call to retrieve Octopus Spaces data to verify that we can authenticate against Octopus instance."
-$header = @{ "X-Octopus-ApiKey" = $OctoApiKey }
-$spaces = (Invoke-WebRequest $OctoUrl/api/spaces -Headers $header)
-Write-Verbose $spaces
-Write-Output "That seems to work. (Check verbose logs to see API call response)."
+$apikeyWorks = $false
+try {
+    $header = @{ "X-Octopus-ApiKey" = $OctoApiKey }
+    $spaces = (Invoke-WebRequest $OctoUrl/api/spaces -Headers $header)
+    Write-Output "That seems to work."
+    $apikeyWorks = $true
+}
+catch {
+    Write-Warning  "OCTOPUS_APIKEY auth fails for: $OctoUrl. "  
+}
+if (-not $apikeyWorks){
+    # Checking API key starts with "API-"
+    if ($octopus_apikey -notlike "API-*"){
+        Write-Warning  "OCTOPUS_APIKEY doesn't start: ""API-"". "
+    }
+    # Cheking API key is roughly the correct length (about 36 chars - not always exact)
+    if (($octopus_apikey.length -gt 38) -or ($octopus_apikey.length -lt 34)){
+        $OctoApiKeyLength = $octopus_apikey.length
+        Write-Warning "OCTOPUS_APIKEY is $OctoApiKeyLength chars (should be about 36). "
+    }
+}
