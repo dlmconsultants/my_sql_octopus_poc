@@ -2,7 +2,7 @@ param (
     $octopusUrl
 )
 
-Write-Host "Retrieving all AWS Secrets Manager secrets to verify they exist"
+Write-Output "Retrieving all AWS Secrets Manager secrets to verify they exist"
 
 $errorMessage = ""
 $missingSecrets = @()
