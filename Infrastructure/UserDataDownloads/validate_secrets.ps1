@@ -1,5 +1,4 @@
 param (
-    $expectedOctopusSqlPassword,
     $octopusUrl
 )
 
@@ -84,19 +83,6 @@ if ("OCTOPUS_THUMBPRINT" -notin $missingSecrets){
         Write-Warning  "OCTOPUS_THUMBPRINT in AWS Secrets is: $OctoThumbprintLength"
         $badSecretMessages = $badSecretMessages + "OCTOPUS_THUMBPRINT is not the correct length (Expected: 40 chars, Actual: $OctoThumbprintLength). "
     } 
-}
-
-if ("OCTOPUS_SQL_PASSWORD" -notin $missingSecrets){
-    # OCTOPUS_SQL_PASSWORD from Octopus is a SecureString, but OCTOPUS_SQL_PASSWORD from AWS is plaintext.
-    # Need to decrypt the Octopus password to compare and verify a match
-    Write-Output "Decrypting OCTOPUS_SQL_PASSWORD from Octopus Deploy (SecureString) so that we can compare with OCTOPUS_SQL_PASSWORD from AWS (plaintext) and check they match."
-    $decryptedExpectedOctopusSqlPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($expectedOctopusSqlPassword))
-
-    if ($octopus_sql_password -notlike $decryptedExpectedOctopusSqlPassword){
-        Write-Warning  "OCTOPUS_SQL_PASSWORD in AWS is: $octopus_sql_password"
-        Write-Warning  "OCTOPUS_SQL_PASSWORD in Octopus is: $decryptedExpectedOctopusSqlPassword"
-        $badSecretMessages = $badSecretMessages + "OCTOPUS_SQL_PASSWORD in Octopus and AWS do not match. "
-    }
 }
 
 # Logging password validation results
