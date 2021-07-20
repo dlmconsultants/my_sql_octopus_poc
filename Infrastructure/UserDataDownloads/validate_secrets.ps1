@@ -57,7 +57,7 @@ if ("OCTOPUS_APIKEY" -notin $missingSecrets){
     $apikeyWorks = $false
     try {
         $header = @{ "X-Octopus-ApiKey" = $octopus_apikey }
-        $spaces = (Invoke-WebRequest $octopusUrl/api/spaces -Headers $header)
+        $spaces = (Invoke-WebRequest $octopusUrl/api/spaces -Headers $header -UseBasicParsing)
         Write-Output "That seems to work."
         $apikeyWorks = $true
     }
