@@ -50,6 +50,7 @@ while ($sqlOnline -like $false){
   Start-Sleep -s 5
 }
 
+Update-StatupStatus -status "setup-4/5-SettingUpSqlServer"
 Write-Output "  Creating student and octopus logins."
 New-DbaLogin -SqlInstance $SQLServer -Login student -SecurePassword $studentPassword -SqlCredential $cred
 New-DbaLogin -SqlInstance $SQLServer -Login octopus -SecurePassword $octopusPassword -SqlCredential $cred

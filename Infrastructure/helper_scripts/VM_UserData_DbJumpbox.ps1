@@ -87,7 +87,7 @@ set-location "$startupDir\$scriptsDir"
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_sql_server.ps1"
-Update-StatupStatus -status "setup-4/5-SettingUpSqlServer"
+Update-StatupStatus -status "setup-4/5-SettingUpSqlServer... (WaitingForSqlServerToStart)"
 Write-Output "Executing ./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp"
 ./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp
 
