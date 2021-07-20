@@ -48,7 +48,7 @@ catch {
 }
 
 if ($missingSecrets.length -gt 0){
-    $errorMessage = "Missing secrets: " + $missingSecrets
+    $errorMessage = "Missing secrets: " + $missingSecrets + " Hint: Did you create your secrets in the correct AWS region? They need to be in the same region as your instances."
 }
 
 # Checking some of the secrets are in the expected format
