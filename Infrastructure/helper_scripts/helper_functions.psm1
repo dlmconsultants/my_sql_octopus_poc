@@ -216,7 +216,8 @@ Function Start-Servers {
             $tags = @( @{key="Project";value="my_sql_octopus_poc"}, `
                        @{key="StartupStatus";value="booting"}, `
                        @{key="Role";value=$role}, `
-                       @{key="Environment";value=$environment} 
+                       @{key="Environment";value=$environment}, `
+                       @{key="Name";value="$role-$environment"} 
                     )
             
             New-EC2Tag -Resources $( $InstanceID ) -Tags $tags
