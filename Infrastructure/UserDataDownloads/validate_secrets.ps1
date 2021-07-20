@@ -54,16 +54,14 @@ if ($missingSecrets.length -gt 0){
 if ("OCTOPUS_APIKEY" -notin $missingSecrets){
     # Checking API key starts with "API-"
     if ($octopus_apikey -notlike "API-*"){
-        Write-Warning "OCTOPUS_APIKEY in AWS Secrets is: $octopus_apikey"
         Write-Warning  "OCTOPUS_APIKEY doesn't start: ""API-"". "
         $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY doesn't start: ""API-"". "
     }
     # Cheking API key is correct length
-    if (-not ($octopus_apikey.length -eq 36)){
+    if (($octopus_apikey.length -gt 40) -or ($octopus_apikey.length -lt 32)){
         $OctoApiKeyLength = $octopus_apikey.length
-        Write-Warning  "OCTOPUS_APIKEY in AWS Secrets is: $octopus_apikey"
-        Write-Warning "OCTOPUS_APIKEY is $OctoApiKeyLength chars (should be 36). "
-        $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY is $OctoApiKeyLength chars (should be 36). "
+        Write-Warning "OCTOPUS_APIKEY is $OctoApiKeyLength chars (should be about 36). "
+        $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY is $OctoApiKeyLength chars (should be about 36). "
     }
     # Checking API key works
     Write-Output "Executing a simple API call to retrieve Octopus Spaces data to verify that we can authenticate against Octopus instance."
@@ -82,7 +80,6 @@ if ("OCTOPUS_THUMBPRINT" -notin $missingSecrets){
     # Checking Octopus Thumbprint is correct length (40 chars)
     if (-not ($octopus_thumbprint.length -eq 40)){
         $OctoThumbprintLength = $octopus_thumbprint.length
-        Write-Warning  "OCTOPUS_THUMBPRINT in AWS Secrets is: $OctoThumbprintLength"
         Write-Warning "OCTOPUS_THUMBPRINT is $OctoThumbprintLength chars (should be 40). "
         $badSecretMessages = $badSecretMessages + "OCTOPUS_THUMBPRINT is $OctoThumbprintLength chars (should be 40). "
     } 
