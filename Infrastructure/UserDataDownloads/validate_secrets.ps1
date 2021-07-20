@@ -52,27 +52,31 @@ if ($missingSecrets.length -gt 0){
 
 # Checking some of the secrets are in the expected format
 if ("OCTOPUS_APIKEY" -notin $missingSecrets){
-    # Checking API key starts with "API-"
-    if ($octopus_apikey -notlike "API-*"){
-        Write-Warning  "OCTOPUS_APIKEY doesn't start: ""API-"". "
-        $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY doesn't start: ""API-"". "
-    }
-    # Cheking API key is correct length
-    if (($octopus_apikey.length -gt 40) -or ($octopus_apikey.length -lt 32)){
-        $OctoApiKeyLength = $octopus_apikey.length
-        Write-Warning "OCTOPUS_APIKEY is $OctoApiKeyLength chars (should be about 36). "
-        $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY is $OctoApiKeyLength chars (should be about 36). "
-    }
     # Checking API key works
     Write-Output "Executing a simple API call to retrieve Octopus Spaces data to verify that we can authenticate against Octopus instance."
+    $apikeyWorks = $false
     try {
         $header = @{ "X-Octopus-ApiKey" = $OctoApiKey }
         $spaces = (Invoke-WebRequest $octopusUrl/api/spaces -Headers $header)
         Write-Output "That seems to work."
+        $apikeyWorks = $true
     }
     catch {
         Write-Warning  "OCTOPUS_APIKEY auth fails for: $octopusUrl. "
         $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY auth fails for: $octopusUrl. "    
+    }
+    if (-not $apikeyWorks){
+        # Checking API key starts with "API-"
+        if ($octopus_apikey -notlike "API-*"){
+            Write-Warning  "OCTOPUS_APIKEY doesn't start: ""API-"". "
+            $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY doesn't start: ""API-"". "
+        }
+        # Cheking API key is roughly the correct length (about 36 chars - not always exact)
+        if (($octopus_apikey.length -gt 38) -or ($octopus_apikey.length -lt 34)){
+            $OctoApiKeyLength = $octopus_apikey.length
+            Write-Warning "OCTOPUS_APIKEY is $OctoApiKeyLength chars (should be about 36). "
+            $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY is $OctoApiKeyLength chars (should be about 36). "
+        }
     }
 }
 
