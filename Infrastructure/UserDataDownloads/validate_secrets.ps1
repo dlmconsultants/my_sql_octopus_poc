@@ -62,7 +62,7 @@ if ("OCTOPUS_APIKEY" -notin $missingSecrets){
         $apikeyWorks = $true
     }
     catch {
-        Write-Warning  "OCTOPUS_APIKEY auth fails for: $octopusUrl. "
+        Write-Warning  "OCTOPUS_APIKEY $octopus_apikey cannot authenticate against: $octopusUrl. "
         $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY auth fails for: $octopusUrl. "    
     }
     if (-not $apikeyWorks){
