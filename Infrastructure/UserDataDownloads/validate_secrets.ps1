@@ -55,13 +55,15 @@ if ("OCTOPUS_APIKEY" -notin $missingSecrets){
     # Checking API key starts with "API-"
     if ($octopus_apikey -notlike "API-*"){
         Write-Warning "OCTOPUS_APIKEY in AWS Secrets is: $octopus_apikey"
-        $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY does not start with ""API-"". "
+        Write-Warning  "OCTOPUS_APIKEY doesn't start: ""API-"". "
+        $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY doesn't start: ""API-"". "
     }
     # Cheking API key is correct length
     if (-not ($octopus_apikey.length -eq 36)){
         $OctoApiKeyLength = $octopus_apikey.length
         Write-Warning  "OCTOPUS_APIKEY in AWS Secrets is: $octopus_apikey"
-        $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY is not the correct length (Expected: 36 chars, Actual: $OctoApiKeyLength). "
+        Write-Warning "OCTOPUS_APIKEY is $OctoApiKeyLength chars (should be 36). "
+        $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY is $OctoApiKeyLength chars (should be 36). "
     }
     # Checking API key works
     Write-Output "Executing a simple API call to retrieve Octopus Spaces data to verify that we can authenticate against Octopus instance."
@@ -71,8 +73,8 @@ if ("OCTOPUS_APIKEY" -notin $missingSecrets){
         Write-Output "That seems to work."
     }
     catch {
-        Write-Warning  "OCTOPUS_APIKEY from AWS fails to authenticate with Octopus Deploy instance: $octopusUrl"
-        $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY from AWS fails to authenticate with Octopus Deploy instance: $octopusUrl. "    
+        Write-Warning  "OCTOPUS_APIKEY auth fails for: $octopusUrl. "
+        $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY auth fails for: $octopusUrl. "    
     }
 }
 
@@ -81,7 +83,8 @@ if ("OCTOPUS_THUMBPRINT" -notin $missingSecrets){
     if (-not ($octopus_thumbprint.length -eq 40)){
         $OctoThumbprintLength = $octopus_thumbprint.length
         Write-Warning  "OCTOPUS_THUMBPRINT in AWS Secrets is: $OctoThumbprintLength"
-        $badSecretMessages = $badSecretMessages + "OCTOPUS_THUMBPRINT is not the correct length (Expected: 40 chars, Actual: $OctoThumbprintLength). "
+        Write-Warning "OCTOPUS_THUMBPRINT is $OctoThumbprintLength chars (should be 40). "
+        $badSecretMessages = $badSecretMessages + "OCTOPUS_THUMBPRINT is $OctoThumbprintLength chars (should be 40). "
     } 
 }
 
@@ -90,7 +93,12 @@ if ($badSecretMessages -notlike ""){
     $errorMessage = "$errorMesage There are problems with the following secrets: $badSecretMessages"
 }
 if ($errorMessage -notlike ""){
-    Update-StatupStatus -status "FAILED-AwsSecretsValidationErrors: $errorMessage"
+    $newStatus = "FAILED-AwsSecretsValidationErrors: $errorMessage"
+    # Tag values can be max 256 chars
+    if ($newStatus.length -gt 255){
+        $newStatus = $newStatus.SubString(0,213) + " ... (see log in c:/startupfor full error)" # additional string is 42 chars. 213 + 42 = 255
+    }
+    Update-StatupStatus -status $newStatus
     Write-Error "$errorMessage"
 } else {
     Write-Output "All required AWS Secrets are present and pass validation checks."
