@@ -1,5 +1,6 @@
 param (
-    $expectedOctopusSqlPassword
+    $expectedOctopusSqlPassword,
+    $octopusUrl
 )
 
 Write-Host "Retrieving all AWS Secrets Manager secrets to verify they exist"
@@ -52,21 +53,41 @@ if ($missingSecrets.length -gt 0){
 
 # Checking some of the secrets are in the expected format
 if ("OCTOPUS_APIKEY" -notin $missingSecrets){
+    # Checking API key starts with "API-"
     if ($octopus_apikey -notlike "API-*"){
         Write-Warning "OCTOPUS_APIKEY in AWS is: $octopus_apikey"
         $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY does not start with ""API-"". "
     }
+    # Cheking API key is correct length
     if (-not ($octopus_apikey.length -eq 36)){
         $OctoApiKeyLength = $octopus_apikey.length
         Write-Warning  "OCTOPUS_APIKEY in AWS is: $octopus_apikey"
         $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY is not the correct length (Expected: 36 chars, Actual: $OctoApiKeyLength). "
     }
+    # Checking API key works
+    Write-Output "Executing a simple API call to retrieve Octopus Spaces data to verify that we can authenticate against Octopus instance."
+    try {
+        $header = @{ "X-Octopus-ApiKey" = $OctoApiKey }
+        $spaces = (Invoke-WebRequest $octopusUrl/api/spaces -Headers $header)
+        Write-Output "That seems to work."
+    }
+    catch {
+        Write-Warning  "OCTOPUS_APIKEY from AWS fails to authenticate with Octopus Deploy instance: $octopusUrl"
+        $badSecretMessages = $badSecretMessages + "OCTOPUS_APIKEY from AWS fails to authenticate with Octopus Deploy instance: $octopusUrl. "    
+    }
 }
 
-if (("OCTOPUS_SQL_PASSWORD" -notin $missingSecrets) -and ($octopus_sql_password -notlike $expectedOctopusSqlPassword)){
-    Write-Warning  "OCTOPUS_SQL_PASSWORD in AWS is: $octopus_sql_password"
-    Write-Warning  "OCTOPUS_SQL_PASSWORD in Octopus is: $expectedOctopusSqlPassword"
-    $badSecretMessages = $badSecretMessages + "OCTOPUS_SQL_PASSWORD in Octopus and AWS do not match. "
+if ("OCTOPUS_SQL_PASSWORD" -notin $missingSecrets){
+    # OCTOPUS_SQL_PASSWORD from Octopus is a SecureString, but OCTOPUS_SQL_PASSWORD from AWS is plaintext.
+    # Need to decrypt the Octopus password to compare and verify a match
+    Write-Output "Decrypting OCTOPUS_SQL_PASSWORD from Octopus Deploy (SecureString) so that we can compare with OCTOPUS_SQL_PASSWORD from AWS (plaintext) and check they match."
+    $decryptedExpectedOctopusSqlPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($expectedOctopusSqlPassword))
+
+    if ($octopus_sql_password -notlike $decryptedExpectedOctopusSqlPassword){
+        Write-Warning  "OCTOPUS_SQL_PASSWORD in AWS is: $octopus_sql_password"
+        Write-Warning  "OCTOPUS_SQL_PASSWORD in Octopus is: $expectedOctopusSqlPassword"
+        $badSecretMessages = $badSecretMessages + "OCTOPUS_SQL_PASSWORD in Octopus and AWS do not match. "
+    }
 }
 
 # Logging password validation results
