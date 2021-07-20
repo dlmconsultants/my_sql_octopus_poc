@@ -463,3 +463,14 @@ function Test-KeyPair {
     }
 }
 
+function Get-InstanceStatuses{
+    param (
+        $instances = @()
+    )
+    $statuses = @()
+    foreach ($instance in $instances){
+        $status = (Get-EC2Tag -Filter @{Name="resource-id";Values=$resource},@{Name="key";Values="StartupStatus"}).Value
+        $statuses += @{$instance=$status}
+    }
+    return $statuses
+}

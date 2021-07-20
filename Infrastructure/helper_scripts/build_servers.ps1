@@ -319,6 +319,134 @@ catch {
 ##########     6. Waiting until everything comes back online     ##########
 
 if ($deployJump){
+    # Checking to see if the jumpbox has started yet
+    $dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -environment $environment -includePending
+    if ($dbJumpboxInstances.count -ne 1){
+        $instancesFailed = $true
+        $num = $dbJumpboxInstances.count
+        Write-Error "Expected 1 SQL Jumpbox instance but have $num instance(s)."
+    }
+    $jumpboxRunning = $false
+    $runningDbJumpboxInstances = @()
+    $count = 0
+    While (-not $jumpboxRunning){
+        $count++
+        $runningDbJumpboxInstances = Get-Servers -role $dbJumpboxRole -environment $environment
+        $NumRunning = $runningDbJumpboxInstances.count
+        if ($NumRunning -eq 1){
+            $jumpboxRunning = $true
+            $jumpIp = $runningDbJumpboxInstances[0].PublicIpAddress
+            # Logging all the IP addresses
+            Write-Output "    SQL Jumpbox is running!"
+            Write-Output "      SQL Jumpbox: $jumpIp"
+            break
+        }
+        if (($count % 5) -eq 0){
+            Write-Output "      Waiting for SQL Jumpbox to start..."
+        }
+        Start-Sleep -s 2
+    }
+}
+
+$webServerIds = (Get-Servers -Role $webServerRole -environment $environment).InstanceId
+$dbServerIds = (Get-Servers -Role $dbServerRole -environment $environment).InstanceId
+$dbJumpboxIds = (Get-Servers -Role $dbJumpboxRole -environment $environment).InstanceId
+
+$readyInstances = @()
+$numRequired = $webServerIds.length + $dbServerIds.length + $dbJumpboxIds.length
+$counter = 0
+
+$previousWebServerStatuses = Get-InstanceStatuses -instances $webServerIds
+$previousDbServerStatuses = Get-InstanceStatuses -instances $dbServerIds
+$previousDbJumpboxStatuses = Get-InstanceStatuses -instances $dbJumpboxIds
+
+# So that anyone executing this runbook has a rough idea how long they can expect to wait
+Write-Output "    Waiting for all instances to complete setup..."
+Write-Output "      Setup usually takes roughly:"
+Write-Output "         - SQL Jumpbox tentacles:     270-330 seconds"
+Write-Output "         - Web server IIS installs:   350-400 seconds"
+Write-Output "         - Web server tentacles:      450-500 seconds"
+Write-Output "         - SQL Server install:        600-750 seconds"
+
+Write-Output "$time seconds | begin polling for updates every 2 seconds..." 
+
+while ($readyInstances.length -lt $numRequired){
+    Start-Sleep -s 2
+    $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
+    $newWebServerStatuses = Get-InstanceStatuses -instances $webServerIds
+    $newDbServerStatuses = Get-InstanceStatuses -instances $dbServerIds
+    $newDbJumpboxStatuses = Get-InstanceStatuses -instances $dbJumpboxIds
+
+    # Surely this can all be cleaned up???????
+    if (Compare-Object $newWebServerStatuses $previousWebServerStatuses){
+        # At least one status has changed
+        for ($i -eq 0; $i -lt $newWebServerStatuses.length; $i++){
+            if ($newWebServerStatuses[$i].Value -notlike $previousWebServerStatuses[$i].Value){
+                $instanceId = $newWebServerStatuses[$i].Keys
+                $status = $newWebServerStatuses[$i].Values
+                "$time seconds | Web server $instanceId is now in status: $status" 
+                if ($status -like "*FAIL*"){
+                    Write-Error "Instance $instanceId failed to start up correctly. Other instances may or may not start as expected. Error for $instanceId is: $status"
+                }
+                if (($status -like "*ready*") -and ($instanceId -notin $readyInstances)){
+                    $readyInstances = $readyInstances + $instanceId
+                }
+            }
+        }
+    }
+
+    if (Compare-Object $newDbServerStatuses $previousDbServerStatuses){
+        # At least one status has changed
+        for ($i -eq 0; $i -lt $newDbServerStatuses.length; $i++){
+            if ($newDbServerStatuses[$i].Value -notlike $previousDbServerStatuses[$i].Value){
+                $instanceId = $newDbServerStatuses[$i].Keys
+                $status = $newDbServerStatuses[$i].Values
+                "$time seconds | Web server $instanceId is now in status: $status" 
+                if ($status -like "*FAIL*"){
+                    Write-Error "Instance $instanceId failed to start up correctly. Other instances may or may not start as expected. Error for $instanceId is: $status"
+                }
+                if (($status -like "*ready*") -and ($instanceId -notin $readyInstances)){
+                    $readyInstances = $readyInstances + $instanceId
+                }
+            }
+        }
+    }
+
+    if (Compare-Object $newDbJumpboxStatuses $previousDbJumpboxStatuses){
+        # At least one status has changed
+        for ($i -eq 0; $i -lt $newDbJumpboxStatuses.length; $i++){
+            if ($newDbJumpboxStatuses[$i].Value -notlike $previousDbJumpboxStatuses[$i].Value){
+                $instanceId = $newDbJumpboxStatuses[$i].Keys
+                $status = $newDbJumpboxStatuses[$i].Values
+                "$time seconds | Web server $instanceId is now in status: $status" 
+                if ($status -like "*FAIL*"){
+                    Write-Error "Instance $instanceId failed to start up correctly. Other instances may or may not start as expected. Error for $instanceId is: $status"
+                }
+                if (($status -like "*ready*") -and ($instanceId -notin $readyInstances)){
+                    $readyInstances = $readyInstances + $instanceId
+                }
+            }
+        }
+    }
+
+    if ($readyInstances.length -lt $numRequired){
+        break
+    }
+    # finishing this iteration
+    $counter ++
+    if ($counter % 20 -eq 0){
+        Write-Output "$time seconds | still polling for updates..." 
+    }
+    $previousWebServerStatuses = $newWebServerStatuses
+    $previousDbServerStatuses = $newDbServerStatuses 
+    $previousDbJumpboxStatuses = $newDbJumpboxStatuses
+}
+
+Write-Output "SUCCESS!"
+
+<# OLD IMPLEMENTATION for part 6 (waiting)
+
+if ($deployJump){
     # Checking to see if the jumpbox came online
     $dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -environment $environment -includePending
     if ($dbJumpboxInstances.count -ne 1){
@@ -509,3 +637,4 @@ else {
     Write-Error "FAILED! The numbers of required and existing VMs do not match."
 }
 
+#>
