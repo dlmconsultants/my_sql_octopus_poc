@@ -56,7 +56,7 @@ if ("OCTOPUS_APIKEY" -notin $missingSecrets){
     Write-Output "Executing a simple API call to retrieve Octopus Spaces data to verify that we can authenticate against Octopus instance."
     $apikeyWorks = $false
     try {
-        $header = @{ "X-Octopus-ApiKey" = $OctoApiKey }
+        $header = @{ "X-Octopus-ApiKey" = $octopus_apikey }
         $spaces = (Invoke-WebRequest $octopusUrl/api/spaces -Headers $header)
         Write-Output "That seems to work."
         $apikeyWorks = $true
