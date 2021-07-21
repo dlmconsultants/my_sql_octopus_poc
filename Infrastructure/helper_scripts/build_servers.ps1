@@ -297,25 +297,6 @@ if ($deployJump){
     Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData $jumpServerUserData  
 }
 
-########   5. Installing dbatools so that we can ping SQL Server to see when it comes online   ########    ##########
-
-try {
-    Import-Module dbatools
-}
-catch {
-    Write-Output "    Installing dbatools so that we can ping SQL Server..."
-    Write-Output "      (This takes a couple of minutes)"
-    Install-Module dbatools -Force
-}
-try {
-    Import-Module dbatools
-    Update-Dbatools -EnableException
-    Write-Output "      dbatools is ready for use"
-}
-catch {
-    Write-Error "Failed to install dbatools: $Error[0]"
-}
-
 ##########     6. Waiting until everything comes back online     ##########
 
 if ($deployJump){
@@ -384,7 +365,7 @@ while ($readyInstances.length -lt $numRequired){
             if ($newWebServerStatuses[$i].Value -notlike $previousWebServerStatuses[$i].Value){
                 $instanceId = $newWebServerStatuses[$i].Keys
                 $status = $newWebServerStatuses[$i].Values
-                "$time seconds | Web server $instanceId is now in status: $status" 
+                Write-Output "$time seconds | Web server $instanceId is now in status: $status" 
                 if ($status -like "*FAIL*"){
                     Write-Error "Instance $instanceId failed to start up correctly. Other instances may or may not start as expected. Error for $instanceId is: $status"
                 }
@@ -401,7 +382,7 @@ while ($readyInstances.length -lt $numRequired){
             if ($newDbServerStatuses[$i].Value -notlike $previousDbServerStatuses[$i].Value){
                 $instanceId = $newDbServerStatuses[$i].Keys
                 $status = $newDbServerStatuses[$i].Values
-                "$time seconds | Web server $instanceId is now in status: $status" 
+                Write-Output "$time seconds | Web server $instanceId is now in status: $status" 
                 if ($status -like "*FAIL*"){
                     Write-Error "Instance $instanceId failed to start up correctly. Other instances may or may not start as expected. Error for $instanceId is: $status"
                 }
@@ -418,7 +399,7 @@ while ($readyInstances.length -lt $numRequired){
             if ($newDbJumpboxStatuses[$i].Value -notlike $previousDbJumpboxStatuses[$i].Value){
                 $instanceId = $newDbJumpboxStatuses[$i].Keys
                 $status = $newDbJumpboxStatuses[$i].Values
-                "$time seconds | Web server $instanceId is now in status: $status" 
+                Write-Output "$time seconds | Web server $instanceId is now in status: $status" 
                 if ($status -like "*FAIL*"){
                     Write-Error "Instance $instanceId failed to start up correctly. Other instances may or may not start as expected. Error for $instanceId is: $status"
                 }
