@@ -353,6 +353,7 @@ Write-Output "         - Web server tentacles:      450-500 seconds"
 Write-Output "         - SQL Server install:        600-750 seconds"
 
 $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
+$counter = 1
 Write-Output "$time seconds | begin polling for updates every 2 seconds..." 
 
 while ($instances.status.length -ne ($instances | Where-Object { $_.status -like "ready*" }).length){
@@ -372,6 +373,13 @@ while ($instances.status.length -ne ($instances | Where-Object { $_.status -like
             Write-output $instances
             Write-Error "At least one instance has failed to start up correctly. Review all your EC2 instances and either terminate or fix them, then try again."
         }
+    }
+    $counter++
+    if (($counter % 30) -eq 0){
+        Write-Output "$time seconds | (still polling for updates every 2 seconds)" 
+    }
+    if ($time -gt 1500){
+        Write-Error "Timed out at $time seconds. It shouldn't take this long. Compare expected times to the actual times for a hint at whether/where the process failed."
     }
 }
 
