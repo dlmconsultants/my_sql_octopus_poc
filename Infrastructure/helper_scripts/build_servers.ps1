@@ -329,17 +329,21 @@ if ($deployJump){
     }
 }
 
-$webServerIds = (Get-Servers -Role $webServerRole -environment $environment).InstanceId
-$dbServerIds = (Get-Servers -Role $dbServerRole -environment $environment).InstanceId
-$dbJumpboxIds = (Get-Servers -Role $dbJumpboxRole -environment $environment).InstanceId
+# Creating a datatable object to keep track of the status of all our VMs
+$instances = New-Object System.Data.Datatable
+[void]$instances.Columns.Add("id")
+[void]$instances.Columns.Add("role")
+[void]$instances.Columns.Add("status")
 
-$readyInstances = @()
-$numRequired = $webServerIds.length + $dbServerIds.length + $dbJumpboxIds.length
-$counter = 0
-
-$previousWebServerStatuses = Get-InstanceStatuses -instances $webServerIds
-$previousDbServerStatuses = Get-InstanceStatuses -instances $dbServerIds
-$previousDbJumpboxStatuses = Get-InstanceStatuses -instances $dbJumpboxIds
+ForEach ($instanceId in ((Get-Servers -Role $webServerRole -environment $environment).InstanceId)){
+    [void]$instances.Rows.Add($instanceId,"Web server","")
+}
+ForEach ($instanceId in ((Get-Servers -Role $dbServerRole -environment $environment).InstanceId)){
+    [void]$instances.Rows.Add($instanceId,"Database server","")
+}
+ForEach ($instanceId in ((Get-Servers -Role $dbJumpboxRole -environment $environment).InstanceId)){
+    [void]$instances.Rows.Add($instanceId,"Database jumpbox","")
+}
 
 # So that anyone executing this runbook has a rough idea how long they can expect to wait
 Write-Output "    Waiting for all instances to complete setup..."
@@ -351,79 +355,28 @@ Write-Output "         - SQL Server install:        600-750 seconds"
 
 Write-Output "$time seconds | begin polling for updates every 2 seconds..." 
 
-while ($readyInstances.length -lt $numRequired){
+while ($instances.status.length -ne ($instances | Where-Object { $_.status -like "ready*" }).length){
     Start-Sleep -s 2
     $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
-    $newWebServerStatuses = Get-InstanceStatuses -instances $webServerIds
-    $newDbServerStatuses = Get-InstanceStatuses -instances $dbServerIds
-    $newDbJumpboxStatuses = Get-InstanceStatuses -instances $dbJumpboxIds
-
-    # Surely this can all be cleaned up???????
-    if (Compare-Object $newWebServerStatuses $previousWebServerStatuses){
-        # At least one status has changed
-        for ($i -eq 0; $i -lt $newWebServerStatuses.length; $i++){
-            if ($newWebServerStatuses[$i].Value -notlike $previousWebServerStatuses[$i].Value){
-                $instanceId = $newWebServerStatuses[$i].Keys
-                $status = $newWebServerStatuses[$i].Values
-                Write-Output "$time seconds | Web server $instanceId is now in status: $status" 
-                if ($status -like "*FAIL*"){
-                    Write-Error "Instance $instanceId failed to start up correctly. Other instances may or may not start as expected. Error for $instanceId is: $status"
-                }
-                if (($status -like "*ready*") -and ($instanceId -notin $readyInstances)){
-                    $readyInstances = $readyInstances + $instanceId
-                }
-            }
+    foreach ($instanceId in $instances.id) {
+        $currentStatus = (Get-EC2Tag -Filter @{Name="resource-id";Values=$instanceId},@{Name="key";Values="StartupStatus"}).Value
+        $previousStatus = ($instances.Select("id = $instanceId")).status
+        if ($currentStatus -notlike $previousStatus ){
+            ($instances.Select("id = $instanceId")).status = $currentStatus
+            $role = ($instances.Select("id = $instanceId")).role
+            Write-output "$time seconds | $role $instanceId is now in state: $currentStatus"
         }
     }
-
-    if (Compare-Object $newDbServerStatuses $previousDbServerStatuses){
-        # At least one status has changed
-        for ($i -eq 0; $i -lt $newDbServerStatuses.length; $i++){
-            if ($newDbServerStatuses[$i].Value -notlike $previousDbServerStatuses[$i].Value){
-                $instanceId = $newDbServerStatuses[$i].Keys
-                $status = $newDbServerStatuses[$i].Values
-                Write-Output "$time seconds | Web server $instanceId is now in status: $status" 
-                if ($status -like "*FAIL*"){
-                    Write-Error "Instance $instanceId failed to start up correctly. Other instances may or may not start as expected. Error for $instanceId is: $status"
-                }
-                if (($status -like "*ready*") -and ($instanceId -notin $readyInstances)){
-                    $readyInstances = $readyInstances + $instanceId
-                }
-            }
-        }
-    }
-
-    if (Compare-Object $newDbJumpboxStatuses $previousDbJumpboxStatuses){
-        # At least one status has changed
-        for ($i -eq 0; $i -lt $newDbJumpboxStatuses.length; $i++){
-            if ($newDbJumpboxStatuses[$i].Value -notlike $previousDbJumpboxStatuses[$i].Value){
-                $instanceId = $newDbJumpboxStatuses[$i].Keys
-                $status = $newDbJumpboxStatuses[$i].Values
-                Write-Output "$time seconds | Web server $instanceId is now in status: $status" 
-                if ($status -like "*FAIL*"){
-                    Write-Error "Instance $instanceId failed to start up correctly. Other instances may or may not start as expected. Error for $instanceId is: $status"
-                }
-                if (($status -like "*ready*") -and ($instanceId -notin $readyInstances)){
-                    $readyInstances = $readyInstances + $instanceId
-                }
-            }
-        }
-    }
-
-    if ($readyInstances.length -lt $numRequired){
-        break
-    }
-    # finishing this iteration
-    $counter ++
-    if ($counter % 20 -eq 0){
-        Write-Output "$time seconds | still polling for updates..." 
-    }
-    $previousWebServerStatuses = $newWebServerStatuses
-    $previousDbServerStatuses = $newDbServerStatuses 
-    $previousDbJumpboxStatuses = $newDbJumpboxStatuses
 }
 
+
 Write-Output "SUCCESS!"
+
+
+
+
+
+
 
 <# OLD IMPLEMENTATION for part 6 (waiting)
 
