@@ -197,11 +197,11 @@ if ($webServersToKill -gt 0){
 
 # Building all the servers
 if($webServersToStart -gt 0){
-    Write-Output "    Launching Web Server(s)"
+    Write-Output "    Launching Web Server(s) with command: Start-Servers -role $webServerRole -ami $ami -environment $environment -encodedUserData *** -required $numWebServers"
     Start-Servers -role $webServerRole -ami $ami -environment $environment -encodedUserData $webServerUserData -required $numWebServers   
 }
 if($deploySql){
-    Write-Output "    Launching SQL Server"
+    Write-Output "    Launching SQL Server with commend: Start-Servers -role $dbServerRole -ami $ami -environment $environment -encodedUserData ***"
     Start-Servers -role $dbServerRole -ami $ami -environment $environment -encodedUserData $dbServerUserData
     if($deployJump){
         Write-Output "      (Waiting to launch SQL jumpbox server until we have an IP address for SQL Server instance)." 
