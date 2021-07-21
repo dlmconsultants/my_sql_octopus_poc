@@ -346,11 +346,28 @@ ForEach ($instanceId in ((Get-Servers -Role $dbJumpboxRole -environment $environ
 
 # So that anyone executing this runbook has a rough idea how long they can expect to wait
 Write-Output "    Waiting for all instances to complete setup..."
-Write-Output "      Setup usually takes roughly:"
-Write-Output "         - SQL Jumpbox tentacles:     270-330 seconds"
-Write-Output "         - Web server IIS installs:   350-400 seconds"
-Write-Output "         - Web server tentacles:      450-500 seconds"
-Write-Output "         - SQL Server install:        600-750 seconds"
+Write-Output "      Setup should take roughly this long, but it can vary." 
+Write-Output "         Web Servers:"
+Write-Output "           setup-1/5-validatingSecrets (200-230 seconds)"
+Write-Output "           setup-2/5-CreatingLocalUsers (200-230 seconds)"
+Write-Output "           setup-3/5-SettingUpIIS  (210-240 seconds)"
+Write-Output "           setup-4/5- (? seconds)"
+Write-Output "           setup-5/5-InstallingTentacle (? seconds)"
+Write-Output "           ready (450-500 seconds)"
+Write-Output "         SQL Servers:"
+Write-Output "           setup-1/4-validatingSecrets (200-230 seconds)"
+Write-Output "           setup-2/4-CreatingLocalUsers (200-230 seconds)"
+Write-Output "           setup-3/4-InstallingChoco  (210-240 seconds)"
+Write-Output "           setup-4/4-InstallingSqlServer (220-250 seconds)"
+Write-Output "           ready (600-750 seconds)"
+Write-Output "         DB Jumpboxes:"
+Write-Output "           setup-1/5-validatingSecrets (240-270 seconds)"
+Write-Output "           setup-2/5-CreatingLocalUsers (240-270 seconds)"
+Write-Output "           setup-3/5-InstallingTentacle  (250-280 seconds)"
+Write-Output "           setup-4/5- (? seconds)"
+Write-Output "           setup-5/5-SettingUpSqlServer (? seconds)"
+Write-Output "           ready (600-750 seconds)"
+Write-Output "      (If it's taking significantly longer, review the log at C:/startup on the unresponsive instances.)"
 
 $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
 $counter = 1
