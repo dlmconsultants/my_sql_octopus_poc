@@ -219,7 +219,6 @@ Function Start-Servers {
                        @{key="Environment";value=$environment}, `
                        @{key="Name";value="$role-$environment"} 
                     )
-            
             New-EC2Tag -Resources $( $InstanceID ) -Tags $tags
         }
     }    
