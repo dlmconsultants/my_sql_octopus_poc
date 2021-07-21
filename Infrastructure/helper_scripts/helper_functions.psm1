@@ -286,36 +286,6 @@ function Remove-OctopusMachine {
     }    
 }
 
-# Helper functions to ping the instances
-function Test-SQL {
-    param (
-        $ip,
-        $cred
-    )
-    try { 
-        Invoke-DbaQuery -SqlInstance $ip -Query 'SELECT @@version' -SqlCredential $cred -EnableException -QueryTimeout 1
-    }
-    catch {
-        return $false
-    }
-    return $true
-}
-
-function Test-IIS {
-    param (
-        $ip
-    )
-    try { 
-        $content = Invoke-WebRequest -Uri $ip -TimeoutSec 1 -UseBasicParsing
-    }
-    catch {
-        return $false
-    }
-    if ($content.toString() -like "*iisstart.png*"){
-    return $true
-    }
-}
-
 # Checks whether a tentacle exists with a specific IP address
 function Test-Tentacle {
     param (
