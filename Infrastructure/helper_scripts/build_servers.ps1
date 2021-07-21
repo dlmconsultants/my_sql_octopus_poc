@@ -353,6 +353,7 @@ Write-Output "         - Web server IIS installs:   350-400 seconds"
 Write-Output "         - Web server tentacles:      450-500 seconds"
 Write-Output "         - SQL Server install:        600-750 seconds"
 
+$time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
 Write-Output "$time seconds | begin polling for updates every 2 seconds..." 
 
 while ($instances.status.length -ne ($instances | Where-Object { $_.status -like "ready*" }).length){
