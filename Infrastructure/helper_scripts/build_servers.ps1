@@ -361,18 +361,23 @@ while ($instances.status.length -ne ($instances | Where-Object { $_.status -like
     $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
     foreach ($instanceId in $instances.id) {
         $currentStatus = (Get-EC2Tag -Filter @{Name="resource-id";Values=$instanceId},@{Name="key";Values="StartupStatus"}).Value
-        $previousStatus = ($instances.Select("id = $instanceId")).status
+        $previousStatus = ($instances.Select("id = '$instanceId'")).status
         if ($currentStatus -notlike $previousStatus ){
-            ($instances.Select("id = $instanceId")).status = $currentStatus
-            $role = ($instances.Select("id = $instanceId")).role
+            $thisVm = ($instances.Select("id = '$instanceId'"))
+            $thisVm[0]["status"] = $currentStatus
+            $role = ($instances.Select("id = '$instanceId'")).role
             Write-output "$time seconds | $role $instanceId is now in state: $currentStatus"
+        }
+        if ($currentStatus -like "*FAILED*"){
+            Write-Warning "Uh oh, somewhtin went wrong with $instanceId. Hint: Did you create your secrets in the correct region?"
+            Write-output $instances
+            Write-Error "At least one instance has failed to start up correctly. Review all your EC2 instances and either terminate or fix them, then try again."
         }
     }
 }
 
-
 Write-Output "SUCCESS!"
-
+Write-Output $instances
 
 
 
