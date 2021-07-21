@@ -336,13 +336,13 @@ $instances = New-Object System.Data.Datatable
 [void]$instances.Columns.Add("status")
 
 ForEach ($instanceId in ((Get-Servers -Role $webServerRole -environment $environment).InstanceId)){
-    [void]$instances.Rows.Add($instanceId,"Web server","")
+    [void]$instances.Rows.Add($instanceId,"Web Server","")
 }
 ForEach ($instanceId in ((Get-Servers -Role $dbServerRole -environment $environment).InstanceId)){
-    [void]$instances.Rows.Add($instanceId,"Database server","")
+    [void]$instances.Rows.Add($instanceId,"SQL server","")
 }
 ForEach ($instanceId in ((Get-Servers -Role $dbJumpboxRole -environment $environment).InstanceId)){
-    [void]$instances.Rows.Add($instanceId,"Database jumpbox","")
+    [void]$instances.Rows.Add($instanceId,"DB Jumpbox","")
 }
 
 # So that anyone executing this runbook has a rough idea how long they can expect to wait
