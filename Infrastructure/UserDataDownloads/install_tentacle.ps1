@@ -100,35 +100,43 @@ function Install-Tentacle
 
   & .\tentacle.exe create-instance --instance "Tentacle" --config $tentacleConfigFile --console | Write-Output
   if ($lastExitCode -ne 0) {
+    Update-StatupStatus -status "FAILED-Tentacle installation failed on create-instance"
     throw "Installation failed on create-instance"
   }
   & .\tentacle.exe configure --instance "Tentacle" --home $tentacleHomeDirectory --console | Write-Output
   if ($lastExitCode -ne 0) {
+    Update-StatupStatus -status "FAILED-Tentacle installation failed on configure"
     throw "Installation failed on configure"
   }
   & .\tentacle.exe configure --instance "Tentacle" --app $tentacleAppDirectory --console | Write-Output
   if ($lastExitCode -ne 0) {
+    Update-StatupStatus -status "FAILED-Tentacle installation failed on configure"
     throw "Installation failed on configure"
   }
   & .\tentacle.exe configure --instance "Tentacle" --port $tentacleListenPort --console | Write-Output
   if ($lastExitCode -ne 0) {
+    Update-StatupStatus -status "FAILED-Tentacle installation failed on configure"
     throw "Installation failed on configure"
   }
   & .\tentacle.exe new-certificate --instance "Tentacle" --console | Write-Output
   if ($lastExitCode -ne 0) {
+    Update-StatupStatus -status "FAILED-Tentacle installation failed on creating new certificate"
     throw "Installation failed on creating new certificate"
   }
   & .\tentacle.exe configure --instance "Tentacle" --trust $octopusServerThumbprint --console  | Write-output
   if ($lastExitCode -ne 0) {
+    Update-StatupStatus -status "FAILED-Tentacle installation failed on configure"
     throw "Installation failed on configure"
   }
   & .\tentacle.exe register-with --instance "Tentacle" --server $octopusServerUrl --environment $environment --role $role --name $env:COMPUTERNAME --publicHostName $ipAddress --apiKey $apiKey --comms-style TentaclePassive --force --console | Write-Output
   if ($lastExitCode -ne 0) {
+    Update-StatupStatus -status "FAILED-Tentacle installation failed on register-with"
     throw "Installation failed on register-with"
   }
  
   & .\tentacle.exe service --instance "Tentacle" --install --start --console | Write-Output
   if ($lastExitCode -ne 0) {
+    Update-StatupStatus -status "FAILED-Tentacle installation failed on service install"
     throw "Installation failed on service install"
   }
  
