@@ -130,7 +130,7 @@ function Install-Tentacle
   }
   & .\tentacle.exe register-with --instance "Tentacle" --server $octopusServerUrl --environment $environment --role $role --name $env:COMPUTERNAME --publicHostName $ipAddress --apiKey $apiKey --comms-style TentaclePassive --force --console | Write-Output
   if ($lastExitCode -ne 0) {
-    Update-StatupStatus -status "FAILED-Tentacle installation failed on register-with"
+    Update-StatupStatus -status "FAILED-Tentacle installation failed on register-with. Hint: How many tentacles are already registered with your Octopus Server? Have you got a big enough licence? (Max is 10 for free licences.)"
     throw "Installation failed on register-with"
   }
  

@@ -369,7 +369,7 @@ while ($instances.status.length -ne ($instances | Where-Object { $_.status -like
             Write-output "$time seconds | $role $instanceId is now in state: $currentStatus"
         }
         if ($currentStatus -like "*FAILED*"){
-            Write-Warning "Uh oh, somewhtin went wrong with $instanceId. Hint: Did you create your secrets in the correct region?"
+            Write-Warning "Uh oh, somewhtin went wrong with $instanceId."
             Write-output $instances
             Write-Error "At least one instance has failed to start up correctly. Review all your EC2 instances and either terminate or fix them, then try again."
         }
