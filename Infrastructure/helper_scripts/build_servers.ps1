@@ -165,28 +165,28 @@ $deploySql = $false
 $killJump = $false
 
 if ($jumpboxExists -and $sqlExists){
-    Write-Output "We already have a SQL and Jump server, no need to rebuild either."
+    Write-Output "      We already have a SQL and Jump server, no need to rebuild either."
     $deployJump = $false 
     $deploySql = $false 
     $killJump = $false
 }
 
 if ($jumpboxExists -and (-not $sqlExists)){
-    Write-Output "We have a jump server, but no SQL Server, no need to kill the old jump and build both new."
+    Write-Output "      We have a jump server, but no SQL Server, no need to kill the old jump and build both new."
     $deployJump = $true
     $deploySql = $true
     $killJump = $true
 }
 
 if ((-not $jumpboxExists) -and $sqlExists){
-    Write-Output "We have a SQL server, but no Jump Server, need to spawn a new Jump Server."
+    Write-Output "      We have a SQL server, but no Jump Server, need to spawn a new Jump Server."
     $deployJump = $true
     $deploySql = $false
     $killJump = $false
 }
 
 if ((-not $jumpboxExists) -and (-not $sqlExists)){
-    Write-Output "We don't have a SQL server or Jump Server, need to spawn both."
+    Write-Output "      We don't have a SQL server or Jump Server, need to spawn both."
     $deployJump = $true
     $deploySql = $true
     $killJump = $false
@@ -201,10 +201,12 @@ $webServersToStart = 0
 if ($numExistingWebServers -gt $numWebServers){
     # We have too many web servers. We need to whittle them down.
     $webServersToKill = $numExistingWebServers - $numWebServers
+    Write-Output "      We already have $numExistingWebServers Web Servers but we only need $numWebServers. Need to kill $webServersToKill."
 }
 else {
     # We don't have enough web servers. We need to build more.
     $webServersToStart = $numWebServers - $numExistingWebServers
+    Write-Output "      We already have $numExistingWebServers Web Servers but we need $numWebServers. Need to build $webServersToKill more."
 }
 
 ##########     3. Removing everything that needs to be deleted     ##########
@@ -280,6 +282,8 @@ While ("pending" -in $instances.state){
 }
 
 $sqlIp = ($instances.Select("role = 'SQL Server'")).public_ip
+
+Write-Output "      SQL IP{ address is $sqlIp"
 
 if($deployJump){
     Write-Output "    Launching DB Jumpbox with commend: Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData ***"
