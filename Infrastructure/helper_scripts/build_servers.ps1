@@ -246,7 +246,7 @@ While ("pending" -in $instances.state){
     Start-Sleep 2
 }
 
-$sqlIp = $previousStatus = ($instances.Select("role = 'SQL Server")).public_ip
+$sqlIp = ($instances.Select("role = 'SQL Server'")).public_ip
 
 if($deployJump){
     Write-Output "    Launching DB Jumpbox with commend: Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData ***"
