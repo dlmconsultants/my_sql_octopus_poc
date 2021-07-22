@@ -106,64 +106,105 @@ $dbJumpboxRole = "$rolePrefix-DbJumpbox"
 $webServerUserData = Get-UserData -fileName "VM_UserData_WebServer.ps1" -octoUrl $octoUrl -role $webServerRole -environment $environment -octopusSqlPassword $octopusSqlPassword
 $dbServerUserData = Get-UserData -fileName "VM_UserData_DbServer.ps1" -octoUrl $octoUrl -role $dbServerRole -environment $environment -octopusSqlPassword $octopusSqlPassword
 
-##########     2. Determine how many machines need to be added/deleted     ##########
+# Creating a datatable object to keep track of the status of all our instances
+$instances = New-Object System.Data.Datatable
+[void]$instances.Columns.Add("id")
+[void]$instances.Columns.Add("state")
+[void]$instances.Columns.Add("public_ip")
+[void]$instances.Columns.Add("role")
+[void]$instances.Columns.Add("status")
+
+##########     2. Determine what we already have     ##########
+
+Write-Output "    Checking what infra we already have..."
+
+$existingSqlInstances = Get-Servers -role "$rolePrefix-DbServer" -environment $environment -$includePending
+$existingJumpInstances = Get-Servers -role "$rolePrefix-DbJumpbox" -environment $environment -$includePending
+$existingWebInstances = Get-Servers -role "$rolePrefix-WebServer" -environment $environment -$includePending
+
+ForEach ($instance in $existingSqlInstances){
+    $id = $instance.id
+    $state = $instance.state.name.value 
+    $public_ip = $instance.PublicIpAddress
+    $role = "Web Server"
+    $status = (Get-EC2Tag -Filter @{Name="resource-id";Values=$id},@{Name="key";Values="StartupStatus"}).Value
+    [void]$instances.Rows.Add($instanceId,$state,$public_ip,"SQL Server",$status)
+}
+ForEach ($instance in $existingJumpInstances){
+    $id = $instance.id
+    $state = $instance.state.name.value 
+    $public_ip = $instance.PublicIpAddress
+    $role = "Web Server"
+    $status = (Get-EC2Tag -Filter @{Name="resource-id";Values=$id},@{Name="key";Values="StartupStatus"}).Value
+    [void]$instances.Rows.Add($instanceId,$state,$public_ip,"DB Jumpbox",$status)
+}
+ForEach ($instance in $existingWebInstances){
+    $id = $instance.id
+    $state = $instance.state.name.value 
+    $public_ip = $instance.PublicIpAddress
+    $role = "Web Server"
+    $status = (Get-EC2Tag -Filter @{Name="resource-id";Values=$id},@{Name="key";Values="StartupStatus"}).Value
+    [void]$instances.Rows.Add($instanceId,$state,$public_ip,"Web Server",$status)
+}
+
+Write-output $instances
 
 Write-Output "    Checking required infrastucture changes..."
 
-# Calculating what infra we already have 
-$existingVmsHash = Get-ExistingInfraTotals -environment $environment -rolePrefix $rolePrefix
-$writeableExistingVms = Write-InfraInventory -vmHash $existingVmsHash
-Write-Output "      Existing VMs: $writeableExistingVms"
-
-# Checking the total infra requirement
-$requiredVmsHash = Get-RequiredInfraTotals -numWebServers $numWebServers
-$writeableRequiredVms = Write-InfraInventory -vmHash $requiredVmsHash
-Write-Output "      Required VMs: $writeableRequiredVms"
-
-# Checking whether we need a new SQL machine
-$deploySql = $false
-if ($existingVmsHash.sqlVms -eq 0){
-    Write-Output "        SQL Server deployment is required."
-    $deploySql = $true
+$jumpboxExists = $false
+if ("DB Jumpbox" -in $instances.role){
+    $jumpboxExists = $true
 }
-else {
-    Write-Output "        SQL Server is already running."
+$sqlExists = $false
+if ("SQL Server" -notin $instances.role){
+    $sqlExists = $true
 }
-# Checking whether we need a new SQL Jumpbox and whether we need to kill the existing one
+
 $deployJump = $false
+$deploySql = $false
 $killJump = $false
-if ($existingVmsHash.jumpVms -eq 0){
-    Write-Output "        SQL Jumpbox deployment is required."
+
+if ($jumpboxExists -and $sqlExists){
+    Write-Output "We already have a SQL and Jump server, no need to rebuild either."
+    $deployJump = $false 
+    $deploySql = $false 
+    $killJump = $false
+}
+
+if ($jumpboxExists -and (-not $sqlExists)){
+    Write-Output "We have a jump server, but no SQL Server, no need to kill the old jump and build both new."
     $deployJump = $true
-}
-if ($deploySql -and (-not $deployJump)){
-    Write-Output "        New SQL Server instance being deployed so killing and respawning the SQL Jumpbox as well."
+    $deploySql = $true
     $killJump = $true
-    $deployJump = $true    
 }
-if ($existingVmsHash.jumpVms -gt 1){
-    $totalJumpboxes = $existingVmsHash.jumpVms
-    Write-Warning "Looks like we already have $totalJumpboxes jumpboxes, but we only want 1. Will kill them all and re-deploy"
-    $killJump = $true
-    $deployJump = $true 
+
+if ((-not $jumpboxExists) -and $sqlExists){
+    Write-Output "We have a SQL server, but no Jump Server, need to spawn a new Jump Server."
+    $deployJump = $true
+    $deploySql = $false
+    $killJump = $false
 }
-if (-not $deployJump) {
-    Write-Output "        SQL Jumpbox is already running."
+
+if ((-not $jumpboxExists) -and (-not $sqlExists)){
+    Write-Output "We don't have a SQL server or Jump Server, need to spawn both."
+    $deployJump = $true
+    $deploySql = $true
+    $killJump = $false
 }
 
 # Calculating web servers to start/kill
+$numExistingWebServers = ($instances | Where-Object { $_.role -like "Web Server" }).length
+
 $webServersToKill = 0
 $webServersToStart = 0
-if ($requiredVmsHash.webVms -gt $existingVmsHash.webVms){
-    $webServersToStart = $requiredVmsHash.webVms - $existingVmsHash.webVms
-    Write-Output "        Need to add $webServersToStart web servers."
+
+if ($numExistingWebServers -gt $numWebServers){
+    # We have too many web servers. We need to whittle them down.
+    $webServersToKill = $numExistingWebServers - $numWebServers
 }
-if ($requiredVmsHash.webVms -lt $existingVmsHash.webVms){
-    $webServersToKill = $existingVmsHash.webVms - $requiredVmsHash.webVms
-    Write-Output "        Too many web servers currently running. Need to remove $webServersToKill web servers."
-}
-if ($requiredVmsHash.webVms -eq $existingVmsHash.webVms){
-    Write-Output "        Correct number of web servers are already running."
+else {
+    # We don't have enough web servers. We need to build more.
+    $webServersToStart = $numWebServers - $numExistingWebServers
 }
 
 ##########     3. Removing everything that needs to be deleted     ##########
@@ -194,14 +235,6 @@ if ($webServersToKill -gt 0){
 }
 
 ##########     4. Adding anything that needs to be added     ##########
-
-# Creating a datatable object to keep track of the status of all our instances
-$instances = New-Object System.Data.Datatable
-[void]$instances.Columns.Add("id")
-[void]$instances.Columns.Add("state")
-[void]$instances.Columns.Add("public_ip")
-[void]$instances.Columns.Add("role")
-[void]$instances.Columns.Add("status")
 
 # Building all the servers
 if($webServersToStart -gt 0){
@@ -339,203 +372,3 @@ while ($instances.status.length -ne ($instances | Where-Object { $_.status -like
 
 Write-Output "SUCCESS!"
 Write-Output $instances
-
-
-
-
-
-
-<# OLD IMPLEMENTATION for part 6 (waiting)
-
-if ($deployJump){
-    # Checking to see if the jumpbox came online
-    $dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -environment $environment -includePending
-    if ($dbJumpboxInstances.count -ne 1){
-        $instancesFailed = $true
-        $num = $dbJumpboxInstances.count
-        $errMsg = "$errMsg Expected 1 SQL Jumpbox instance but have $num instance(s)."
-    }
-    $jumpboxRunning = $false
-    $runningDbJumpboxInstances = @()
-    While (-not $jumpboxRunning){
-
-        $runningDbJumpboxInstances = Get-Servers -role $dbJumpboxRole -environment $environment
-        $NumRunning = $runningDbJumpboxInstances.count
-
-        if ($NumRunning -eq 1){
-            $jumpboxRunning = $true
-            $jumpIp = $runningDbJumpboxInstances[0].PublicIpAddress
-
-            # Logging all the IP addresses
-            Write-Output "    SQL Jumpbox is running!"
-            Write-Output "      SQL Jumpbox: $jumpIp"
-            break
-        }
-        else {
-            Write-Output "      Waiting for SQL Jumpbox to start..."
-        }
-        Start-Sleep -s 15
-    }
-}
-
-# Creating a datatable object to keep track of the status of all our VMs
-$vms = New-Object System.Data.Datatable
-[void]$vms.Columns.Add("ip")
-[void]$vms.Columns.Add("role")
-[void]$vms.Columns.Add("sql_running")
-[void]$vms.Columns.Add("iis_running")
-[void]$vms.Columns.Add("tentacle_listening")
-
-# Only check of SQL is running if we have been given a password for SQL Server
-$sqlrunning = $null
-if ($checkSql){
-    $sqlrunning = $false
-}
-
-# SQL Server instances need SQL Server, but not IIS or a tentacle
-ForEach ($instance in $runningDbServerInstances){
-    [void]$vms.Rows.Add($instance.PublicIpAddress,$dbServerRole,$sqlrunning,$null,$null)
-}
-# SQL Jumpboxes need a tentacle, but not SQL Server or IIS 
-ForEach ($instance in $runningDbJumpboxInstances){
-    [void]$vms.Rows.Add($instance.PublicIpAddress,$dbJumpboxRole,$null,$null,$false)
-}
-# Web Servers need a tentacle and IIS, but not SQL Server 
-ForEach ($instance in $runningWebServerInstances){
-    [void]$vms.Rows.Add($instance.PublicIpAddress,$webServerRole,$null,$false,$false)
-}
-
-# So that anyone executing this runbook has a rough idea how long they can expect to wait
-Write-Output "    Waiting for all instances to complete setup..."
-Write-Output "      Setup usually takes roughly:"
-Write-Output "         - SQL Jumpbox tentacles:     270-330 seconds"
-Write-Output "         - Web server IIS installs:   350-400 seconds"
-Write-Output "         - Web server tentacles:      450-500 seconds"
-Write-Output "         - SQL Server install:        600-750 seconds"
-
-# Waiting to see if they all come online
-$allVmsConfigured = $false
-$runningWarningGiven = $false
-$sqlCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "octopus", $octopusSqlPassword
-$sqlDeployed = $false
-
-While (-not $allVmsConfigured){
-    # Checking whether SQL Server is online yet
-    $pendingSqlServers = $vms.Select("sql_running like '$false'")
-    forEach ($ip in $pendingSqlServers.ip){
-        $sqlDeployed = Test-SQL -ip $ip -cred $sqlCred
-        if ($sqlDeployed){
-            Write-Output "      SQL Server is listening at: $ip"
-            $thisVm = ($vms.Select("ip = '$ip'"))
-            $thisVm[0]["sql_running"] = $true
-        }
-    }
-
-    # Checking whether any IIS instances have come online yet
-    $pendingIisInstalls = $vms.Select("iis_running like '$false'")
-    forEach ($ip in $pendingIisInstalls.ip){
-        $iisDeployed = Test-IIS -ip $ip
-        if ($iisDeployed){
-            Write-Output "      IIS is running on web server: $ip"
-            $thisVm = ($vms.Select("ip = '$ip'"))
-            $thisVm[0]["iis_running"] = $true
-        }
-    }
-
-    # Checking whether any new tentacles have come online yet
-    $pendingTentacles = $vms.Select("tentacle_listening like '$false'")
-    forEach ($ip in $pendingTentacles.ip){
-        $tentacleDeployed = Test-Tentacle -ip $ip -octoUrl $octoUrl -ApiKey $octoApiKey
-        if ($tentacleDeployed){
-            $thisVm = ($vms.Select("ip = '$ip'"))
-            $thisVm[0]["tentacle_listening"] = $true
-            $thisVmRole = "Web server"
-            if ($thisVm[0]["role"] -like "*jump*"){
-                $thisVmRole = "SQL Jumpbox"
-            }
-            Write-Output "      $thisVmRole tentacle is listening on: $ip"
-        }
-    }
-
-    # Getting the time
-    $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
-
-    # Logging the current status
-    ## SQL Server
-    $currentStatus = "$time seconds | "
-    if ($sqlDeployed){
-        $currentStatus = "$currentStatus SQL Server: Running  - "
-    } 
-    else {
-        $currentStatus = "$currentStatus SQL Server: Pending  - "
-    }
-    ## IIS
-    $vmsWithIis = ($vms.Select("iis_running = '$true'"))
-    $numIisInstalls = $vmsWithIis.count
-    $currentStatus = "$currentStatus IIS Installs: $numIisInstalls/$numWebServers  - "
-    ## Tentacles
-    $vmsWithTentacles = ($vms.Select("tentacle_listening = '$true'"))
-    $numTentacles = $vmsWithTentacles.count
-    $tentaclesRequired = $numWebServers + 1 # (All the web servers plus the SQL Jumpbox)
-    $currentStatus = "$currentStatus Tentacles deployed: $numTentacles/$tentaclesRequired"
-    Write-Output "        $currentStatus"
-    
-    # Checking if there is anything left that needs to be configured on any VMs
-    $allVmsConfigured = $true
-    ForEach ($vm in $vms){
-        if ($vm.ItemArray -contains "False"){
-            $allVmsConfigured = $false
-        }
-    }
-    if ($allVmsConfigured){
-        break
-    }
-
-    # Writing a warning if this is taking a suspiciously long time 
-    if (($time -gt 1200) -and (-not $runningWarningGiven)){
-        Write-Warning "EC2 instances are taking an unusually long time to start."
-        $runningWarningGiven = $true
-    }
-
-    # Giving up if we've passed the timeout
-    if (($time -gt $timeout)-and (-not $allVmsConfigured)){
-        Write-Error "Timed out. Timeout currently set to $timeout seconds. There is a parameter on this script to adjust the default timeout."
-    }   
-
-    # If we've got this far, we are still waiting for something. Sleeping for a few seconds before checking again.
-    Start-Sleep -s 10
-}
-
-##########     7. Verify that we have the correct number of machines     ##########
-Write-Output "    Verifying infrastructure:"
-
-# Calculating the total infra requirement
-$existingVmsHash = Get-ExistingInfraTotals -environment $environment -rolePrefix $rolePrefix
-$writeableExistingVms = Write-InfraInventory -vmHash $existingVmsHash
-Write-Output "      Existing VMs: $writeableExistingVms"
-
-$requiredVmsHash = Get-RequiredInfraTotals -numWebServers $numWebServers
-$writeableRequiredVms = Write-InfraInventory -vmHash $requiredVmsHash
-Write-Output "      Required VMs: $writeableRequiredVms"
-
-$runningDbServerInstances = Get-Servers -role $dbServerRole -environment $environment
-$dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -environment $environment -includePending
-$runningWebServerInstances = Get-Servers -role $webServerRole -environment $environment
-$msg = "        SQL Server: " + $runningDbServerInstances[0].PublicIpAddress
-Write-Output $msg 
-$msg = "        SQL Jumpbox: " + $dbJumpboxInstances[0].PublicIpAddress
-Write-Output $msg 
-ForEach ($instance in $runningWebServerInstances){
-    $msg = "        Web server: " + $instance.PublicIpAddress
-    Write-Output $msg
-}
-
-# And did it work?
-if ($writeableRequiredVms -like $writeableExistingVms){
-    Write-Output "SUCCESS! All instances are present and correct."
-}
-else {
-    Write-Error "FAILED! The numbers of required and existing VMs do not match."
-}
-
-#>
