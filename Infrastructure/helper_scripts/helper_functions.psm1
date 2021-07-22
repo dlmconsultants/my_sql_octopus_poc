@@ -209,9 +209,10 @@ Function Start-Servers {
     )
     $existingServers = Get-Servers -role $role -environment $environment -includePending
     $required = $required - $existingServers.count
+    $newInstanceIds = @()
     if ($required -gt 0){
         $NewInstances = New-EC2Instance -ImageId $ami -MinCount $required -MaxCount $required -InstanceType $instanceType -UserData $encodedUserData -KeyName my_sql_octopus_poc -SecurityGroup my_sql_octopus_poc -IamInstanceProfile_Name my_sql_octopus_poc
-        $newInstanceIds = @()
+        
         $newInstanceIds = $newInstanceIds + $newInstances.instances.InstanceId
         # Saw a bug where sometimes the New-Ec2Instance cmdlet silently failed, so adding this while loop to try again
         $attempts = 0
@@ -228,19 +229,27 @@ Function Start-Servers {
             $newInstanceIds = $newInstanceIds + $extraInstances.instances.InstanceId
             $numTotalInstances = $newInstanceIds.length
         }
-    }
-    # Tagging all the instances, regardless of whether weve created enough
-    ForEach ($InstanceID  in $newInstanceIds){
-        $tags = @( @{key="Project";value="my_sql_octopus_poc"}, `
-                   @{key="StartupStatus";value="booting"}, `
-                   @{key="Role";value=$role}, `
-                   @{key="Environment";value=$environment}, `
-                   @{key="Name";value="$role-$environment"} 
-                )
-        New-EC2Tag -Resources $( $InstanceID ) -Tags $tags
-    }
-    if ($numTotalInstances -lt $required){
-        Write-Error "FAILED: Only have $numTotalInstances after 10 attempts at running the following command: New-EC2Instance -ImageId $ami -MinCount $required -MaxCount $required -InstanceType $instanceType -UserData *** -KeyName my_sql_octopus_poc -SecurityGroup my_sql_octopus_poc -IamInstanceProfile_Name my_sql_octopus_poc"
+        # Tagging all the instances, regardless of whether weve created enough
+        ForEach ($InstanceID  in $newInstanceIds){
+            $tags = @( @{key="Project";value="my_sql_octopus_poc"}, `
+                       @{key="StartupStatus";value="booting"}, `
+                       @{key="Role";value=$role}, `
+                       @{key="Environment";value=$environment}, `
+                       @{key="Name";value="$role-$environment"} 
+                    )
+            try {
+                New-EC2Tag -Resources $( $InstanceID ) -Tags $tags
+            }
+            catch {
+                # There's a small chance that if we try to tag too quickly, the tag will fail because it won't yet see the instance ID
+                # A short wait should fix it. 
+                Start-Sleep 5
+                New-EC2Tag -Resources $( $InstanceID ) -Tags $tags
+            }      
+        }
+        if ($numTotalInstances -lt $required){
+            Write-Error "FAILED: Only have $numTotalInstances after 10 attempts at running the following command: New-EC2Instance -ImageId $ami -MinCount $required -MaxCount $required -InstanceType $instanceType -UserData *** -KeyName my_sql_octopus_poc -SecurityGroup my_sql_octopus_poc -IamInstanceProfile_Name my_sql_octopus_poc"
+        }
     }
     return  $newInstanceIds
 }
