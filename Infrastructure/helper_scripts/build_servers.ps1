@@ -195,153 +195,88 @@ if ($webServersToKill -gt 0){
 
 ##########     4. Adding anything that needs to be added     ##########
 
+# Creating a datatable object to keep track of the status of all our instances
+$instances = New-Object System.Data.Datatable
+[void]$instances.Columns.Add("id")
+[void]$instances.Columns.Add("state")
+[void]$instances.Columns.Add("public_ip")
+[void]$instances.Columns.Add("role")
+[void]$instances.Columns.Add("status")
+
 # Building all the servers
 if($webServersToStart -gt 0){
     Write-Output "    Launching Web Server(s) with command: Start-Servers -role $webServerRole -ami $ami -environment $environment -encodedUserData *** -required $numWebServers"
-    Start-Servers -role $webServerRole -ami $ami -environment $environment -encodedUserData $webServerUserData -required $numWebServers   
+    $webServerIds = Start-Servers -role $webServerRole -ami $ami -environment $environment -encodedUserData $webServerUserData -required $numWebServers   
+    ForEach ($instanceId in $webServerIds){
+        [void]$instances.Rows.Add($instanceId,"Pending","unassigned","Web Server","")
+    }
 }
 if($deploySql){
     Write-Output "    Launching SQL Server with commend: Start-Servers -role $dbServerRole -ami $ami -environment $environment -encodedUserData ***"
-    Start-Servers -role $dbServerRole -ami $ami -environment $environment -encodedUserData $dbServerUserData
+    $sqlServerIds = Start-Servers -role $dbServerRole -ami $ami -environment $environment -encodedUserData $dbServerUserData
+    ForEach ($instanceId in $sqlServerIds){
+        [void]$instances.Rows.Add($instanceId,"Pending","unassigned","SQL Server","")
+    }
     if($deployJump){
         Write-Output "      (Waiting to launch SQL jumpbox server until we have an IP address for SQL Server instance)." 
     }
 }
 
-# Checking all the instances
-$dbServerInstances = Get-Servers -role $dbServerRole -environment $environment -includePending
-$webServerInstances = Get-Servers -role $webServerRole -environment $environment -includePending
-
-# Logging all the instance details
-Write-Output "      Verifying instances: "
-ForEach ($instance in $dbServerInstances){
-    $id = $instance.InstanceId
-    $state = $instance.State.Name
-    Write-Output "        SQL Server $id is in state: $state"
-}
-
-ForEach ($instance in $webServerInstances){
-    $id = $instance.InstanceId
-    $state = $instance.State.Name
-    Write-Output "        Web server $id is in state: $state"
-}
-
-# Checking we've got all the right SQL and Web instances
-$instancesFailed = $false
-$errMsg = ""
-if ($dbServerInstances.count -ne 1){
-    $instancesFailed = $true
-    $num = $dbServerInstances.count
-    $errMsg = "$errMsg Expected 1 SQL Server instance but have $num instance(s)."
-}
-if ($webServerInstances.count -ne $numWebServers){
-    $instancesFailed = $true
-    $num = $webServerInstances.count
-    $errMsg = "$errMsg Expected $numWebServers Web Server instance(s) but have $num instance(s)."
-}
-if ($instancesFailed){
-    Write-Error $errMsg
-}
-else {
-    Write-Output "    All SQL and web servers launched successfully!"
-}
+Write-Output $instances
 
 Write-Output "      Waiting for instances to start... (This normally takes about 30 seconds.)"
 
-$allRunning = $false
-$runningDbServerInstances = @()
-$runningWebServerInstances = @()
-$sqlIp = ""
-
-While (-not $allRunning){
-    $totalRequired = $numWebServers + 1 # Web Servers + SQL Server.
-                                        # We'll launch the jumpbox after we know the SQL IP address.
-
-    $runningDbServerInstances = Get-Servers -role $dbServerRole -environment $environment
-    $runningWebServerInstances = Get-Servers -role $webServerRole -environment $environment
-
-    $NumRunning = $runningDbServerInstances.count + $runningWebServerInstances.count
-
-    if ($NumRunning -eq ($totalRequired)){
-        $allRunning = $true
-        $sqlIp = $runningDbServerInstances[0].PublicIpAddress
-
-        $webIps = ""
-        ForEach ($instance in $runningWebServerInstances){
-            $thisIp = $instance.PublicIpAddress
-            if ($webIps -like ""){
-                $webIps = "$thisIp" # The first IP address in the list
-            }
-            else {
-                $webIps = "$webIps, $thisIp" # All subsequent IP addresses
-            }
+$startTime = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
+While ("pending" -in $instances.state){
+    $pendingInstances = ($instances.Select("state = 'Pending'"))
+    foreach ($instance in $pendingInstances){
+        $instanceId = $instance.id
+        $filter = @( @{Name="instance-id";Values=$instanceId} )
+        $currentStatus = (Get-EC2Instance -Filter $filter).Instances
+        if($currentStatus.state.name.value -like "running"){
+            Write-Output "Instance $instanceId has started"
+            $instance["public_ip"] = $currentStatus.PublicIpAddress
+            $instance["state"] = $currentStatus.state.name.value            
         }
-
-        # Logging all the IP addresses
-        Write-Output "    SQL Server machine and all web servers are running!"
-        Write-Output "      SQL Server: $sqlIp"
-        Write-Output "      Web Server(s): $webIps"
-        break
     }
-    else {
-        Write-Output "        $NumRunning out of $totalRequired instances are running."
+    $currentTime = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
+    if (($currentTime - $startTime) -gt 60){
+        Write-Error "It's taking an unusually long time for instances to start."
     }
-    Start-Sleep -s 15
+    Start-Sleep 2
 }
 
-# Now we know the SQL Server IP, we can launch the jumpbox
-if ($deployJump){
-    Write-Output "    Launching SQL Jumpbox"
+$sqlIp = $previousStatus = ($instances.Select("role = 'SQL Server")).public_ip
+
+if($deployJump){
+    Write-Output "    Launching DB Jumpbox with commend: Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData ***"
     $jumpServerUserData = Get-UserData -fileName "VM_UserData_DbJumpbox.ps1" -octoUrl $octoUrl -role $dbJumpboxRole -sql_ip $sqlIp -environment $environment -octopusSqlPassword $octopusSqlPassword
-    Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData $jumpServerUserData  
+    $jumpboxIds = Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData $jumpServerUserData  
+    ForEach ($instanceId in $jumpboxIds){
+        [void]$instances.Rows.Add($instanceId,"Pending","unassigned","DB Jumpbox","")
+    }
 }
 
 ##########     6. Waiting until everything comes back online     ##########
 
-if ($deployJump){
-    # Checking to see if the jumpbox has started yet
-    $dbJumpboxInstances = Get-Servers -role $dbJumpboxRole -environment $environment -includePending
-    if ($dbJumpboxInstances.count -ne 1){
-        $instancesFailed = $true
-        $num = $dbJumpboxInstances.count
-        Write-Error "Expected 1 SQL Jumpbox instance but have $num instance(s)."
-    }
-    $jumpboxRunning = $false
-    $runningDbJumpboxInstances = @()
-    $count = 0
-    While (-not $jumpboxRunning){
-        $count++
-        $runningDbJumpboxInstances = Get-Servers -role $dbJumpboxRole -environment $environment
-        $NumRunning = $runningDbJumpboxInstances.count
-        if ($NumRunning -eq 1){
-            $jumpboxRunning = $true
-            $jumpIp = $runningDbJumpboxInstances[0].PublicIpAddress
-            # Logging all the IP addresses
-            Write-Output "    SQL Jumpbox is running!"
-            Write-Output "      SQL Jumpbox: $jumpIp"
-            break
+$startTime = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
+While ("pending" -in $instances.state){
+    $pendingInstances = ($instances.Select("state = 'Pending'"))
+    foreach ($instance in $pendingInstances){
+        $instanceId = $instance.id
+        $filter = @( @{Name="instance-id";Values=$instanceId} )
+        $currentStatus = (Get-EC2Instance -Filter $filter).Instances
+        if($currentStatus.state.name.value -like "running"){
+            Write-Output "Instance $instanceId has started"
+            $instance["public_ip"] = $currentStatus.PublicIpAddress
+            $instance["state"] = $currentStatus.state.name.value            
         }
-        if (($count % 5) -eq 0){
-            Write-Output "      Waiting for SQL Jumpbox to start..."
-        }
-        Start-Sleep -s 2
     }
-}
-
-# Creating a datatable object to keep track of the status of all our VMs
-$instances = New-Object System.Data.Datatable
-[void]$instances.Columns.Add("id")
-[void]$instances.Columns.Add("role")
-[void]$instances.Columns.Add("status")
-
-ForEach ($instanceId in ((Get-Servers -Role $webServerRole -environment $environment).InstanceId)){
-    [void]$instances.Rows.Add($instanceId,"Web Server","")
-}
-ForEach ($instanceId in ((Get-Servers -Role $dbServerRole -environment $environment).InstanceId)){
-    [void]$instances.Rows.Add($instanceId,"SQL server","")
-}
-ForEach ($instanceId in ((Get-Servers -Role $dbJumpboxRole -environment $environment).InstanceId)){
-    [void]$instances.Rows.Add($instanceId,"DB Jumpbox","")
+    $currentTime = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
+    if (($currentTime - $startTime) -gt 60){
+        Write-Error "It's taking an unusually long time for instances to start."
+    }
+    Start-Sleep 2
 }
 
 # So that anyone executing this runbook has a rough idea how long they can expect to wait

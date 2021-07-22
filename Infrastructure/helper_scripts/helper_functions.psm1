@@ -210,18 +210,39 @@ Function Start-Servers {
     $existingServers = Get-Servers -role $role -value $value -includePending
     $required = $required - $existingServers.count
     if ($required -gt 0){
-        $NewInstance = New-EC2Instance -ImageId $ami -MinCount $required -MaxCount $required -InstanceType $instanceType -UserData $encodedUserData -KeyName my_sql_octopus_poc -SecurityGroup my_sql_octopus_poc -IamInstanceProfile_Name my_sql_octopus_poc
-        # Tagging all the instances
-        ForEach ($InstanceID  in ($NewInstance.Instances).InstanceId){
-            $tags = @( @{key="Project";value="my_sql_octopus_poc"}, `
-                       @{key="StartupStatus";value="booting"}, `
-                       @{key="Role";value=$role}, `
-                       @{key="Environment";value=$environment}, `
-                       @{key="Name";value="$role-$environment"} 
-                    )
-            New-EC2Tag -Resources $( $InstanceID ) -Tags $tags
+        $NewInstances = New-EC2Instance -ImageId $ami -MinCount $required -MaxCount $required -InstanceType $instanceType -UserData $encodedUserData -KeyName my_sql_octopus_poc -SecurityGroup my_sql_octopus_poc -IamInstanceProfile_Name my_sql_octopus_poc
+        $newInstanceIds = @()
+        $newInstanceIds = $newInstanceIds + $newInstances.instances.InstanceId
+        # Saw a bug where sometimes the New-Ec2Instance cmdlet silently failed, so adding this while loop to try again
+        $attempts = 0
+        $numTotalInstances = $newInstanceIds.length
+        while ($numTotalInstances -lt $required){
+            $attempts++
+            if ($attempts -gt 10){
+                Write-Warning "Failed to create enough instances after 10 attempts. Created $totalInstances out of $required: $newInstanceIds"
+                break
+            }
+            Start-Sleep 1
+            $shortfall = $required - $totalInstances
+            $extraInstances = New-EC2Instance -ImageId $ami -MinCount $shortfall -MaxCount $shortfall -InstanceType $instanceType -UserData $encodedUserData -KeyName my_sql_octopus_poc -SecurityGroup my_sql_octopus_poc -IamInstanceProfile_Name my_sql_octopus_poc
+            $newInstanceIds = $newInstanceIds + $extraInstances.instances.InstanceId
+            $numTotalInstances = $newInstanceIds.length
         }
-    }    
+    }
+    # Tagging all the instances, regardless of whether weve created enough
+    ForEach ($InstanceID  in $newInstanceIds){
+        $tags = @( @{key="Project";value="my_sql_octopus_poc"}, `
+                   @{key="StartupStatus";value="booting"}, `
+                   @{key="Role";value=$role}, `
+                   @{key="Environment";value=$environment}, `
+                   @{key="Name";value="$role-$environment"} 
+                )
+        New-EC2Tag -Resources $( $InstanceID ) -Tags $tags
+    }
+    if ($numTotalInstances -lt $required){
+        Write-Error "FAILED: Only have $numTotalInstances after 10 attempts at running the following command: New-EC2Instance -ImageId $ami -MinCount $required -MaxCount $required -InstanceType $instanceType -UserData *** -KeyName my_sql_octopus_poc -SecurityGroup my_sql_octopus_poc -IamInstanceProfile_Name my_sql_octopus_poc"
+    }
+    return  $newInstanceIds
 }
 
 function Get-ExistingInfraTotals {
