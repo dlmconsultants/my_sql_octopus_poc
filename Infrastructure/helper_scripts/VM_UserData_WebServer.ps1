@@ -78,7 +78,7 @@ Write-Output "Executing ./setup_iis.ps1"
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_dotnet_core.ps1"
-Update-StatupStatus -status "setup-4/5-SettingUpIIS"
+Update-StatupStatus -status "setup-4/5-SettingUpDotNetCore"
 Write-Output "Executing ./setup_dotnet_core.ps1"
 ./setup_dotnet_core.ps1
 
