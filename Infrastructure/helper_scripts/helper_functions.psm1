@@ -207,7 +207,7 @@ Function Start-Servers {
         $instanceType = "t2.micro",
         $required = 1
     )
-    $existingServers = Get-Servers -role $role -value $value -includePending
+    $existingServers = Get-Servers -role $role -environment $environment -includePending
     $required = $required - $existingServers.count
     if ($required -gt 0){
         $NewInstances = New-EC2Instance -ImageId $ami -MinCount $required -MaxCount $required -InstanceType $instanceType -UserData $encodedUserData -KeyName my_sql_octopus_poc -SecurityGroup my_sql_octopus_poc -IamInstanceProfile_Name my_sql_octopus_poc
