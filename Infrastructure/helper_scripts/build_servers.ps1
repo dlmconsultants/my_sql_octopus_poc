@@ -279,6 +279,8 @@ While ("pending" -in $instances.state){
     Start-Sleep 2
 }
 
+Write-Output $instances
+
 # So that anyone executing this runbook has a rough idea how long they can expect to wait
 Write-Output "    Waiting for all instances to complete setup..."
 Write-Output "      Setup should take roughly this long, but it can vary." 
