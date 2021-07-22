@@ -219,7 +219,7 @@ Function Start-Servers {
         while ($numTotalInstances -lt $required){
             $attempts++
             if ($attempts -gt 10){
-                Write-Warning "Failed to create enough instances after 10 attempts. Created $totalInstances out of $required: $newInstanceIds"
+                Write-Warning "Failed to create enough instances after 10 attempts. Created $totalInstances out of $required : $newInstanceIds"
                 break
             }
             Start-Sleep 1
