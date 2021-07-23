@@ -82,7 +82,6 @@ if ($octoApiKey -like ""){
 }
 
 # Octopus SQL Server Password
-$checkSql = $true
 if ($octopusSqlPassword -like ""){
     try {
         [SecureString]$octopusSqlPassword = $OctopusParameters["OCTOPUS_SQL_PASSWORD"] | ConvertTo-SecureString -AsPlainText -Force

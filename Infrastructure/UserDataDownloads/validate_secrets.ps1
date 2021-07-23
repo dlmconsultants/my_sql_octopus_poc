@@ -8,12 +8,6 @@ $errorMessage = ""
 $missingSecrets = @()
 $badSecretMessages = @()
 
-$octopus_apikey = ""
-$octopus_thumbprint = ""
-$student_sql_password = ""
-$octopus_sql_password = ""
-$sysadmin_sql_password = ""
-
 # Checking all the secrets exist
 try {
     $octopus_apikey = Get-Secret -secret "OCTOPUS_APIKEY"
@@ -99,10 +93,6 @@ if ($badSecretMessages -notlike ""){
 }
 if ($errorMessage -notlike ""){
     $newStatus = "FAILED-AwsSecretsValidationErrors: $errorMessage"
-    # Tag values can be max 256 chars
-    if ($newStatus.length -gt 255){
-        $newStatus = $newStatus.SubString(0,213) + " ... (see log in c:/startupfor full error)" # additional string is 42 chars. 213 + 42 = 255
-    }
     Update-StatupStatus -status $newStatus
     Write-Error "$errorMessage"
 } else {
