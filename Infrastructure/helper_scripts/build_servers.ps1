@@ -219,6 +219,9 @@ if ($killJump){
         $ip = $jumpServer.PublicIpAddress 
         Write-Output "        Removing EC2 instance $id at $ip."
         Remove-EC2Instance -InstanceId $id -Force | out-null
+        $thisInstanceRecord = ($instances.Select("id = '$id'"))
+        $thisInstanceRecord["status"] = "terminated"
+        $thisInstanceRecord["state"] = "terminated"
         Write-Output "        Removing Octopus Target for $ip."
         Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -apiKey $octoApiKey                
     }
@@ -231,6 +234,9 @@ if ($webServersToKill -gt 0){
         $ip = $webServers[$i].PublicIpAddress 
         Write-Output "        Removing EC2 instance $id at $ip."
         Remove-EC2Instance -InstanceId $id -Force | out-null
+        $thisInstanceRecord = ($instances.Select("id = '$id'"))
+        $thisInstanceRecord["status"] = "terminated"
+        $thisInstanceRecord["state"] = "terminated"
         Write-Output "        Removing Octopus Target for $ip."
         Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -apiKey $octoApiKey                 
     }
@@ -347,7 +353,7 @@ $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
 $counter = 1
 Write-Output "$time seconds | begin polling for updates every 2 seconds..." 
 
-while ($instances.status.length -ne ($instances | Where-Object { $_.status -like "ready*" }).length){
+while (($numWebServers + 2) -ne ($instances | Where-Object { $_.status -like "ready*" }).length){
     Start-Sleep -s 2
     $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
     foreach ($instanceId in $instances.id) {
