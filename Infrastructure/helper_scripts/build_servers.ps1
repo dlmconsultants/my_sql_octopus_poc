@@ -220,8 +220,8 @@ if ($killJump){
         Write-Output "        Removing EC2 instance $id at $ip."
         Remove-EC2Instance -InstanceId $id -Force | out-null
         $thisInstanceRecord = ($instances.Select("id = '$id'"))
-        $thisInstanceRecord["status"] = "terminated"
-        $thisInstanceRecord["state"] = "terminated"
+        $thisInstanceRecord[0]["status"] = "terminated"
+        $thisInstanceRecord[0]["state"] = "terminated"
         Write-Output "        Removing Octopus Target for $ip."
         Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -apiKey $octoApiKey                
     }
@@ -235,8 +235,8 @@ if ($webServersToKill -gt 0){
         Write-Output "        Removing EC2 instance $id at $ip."
         Remove-EC2Instance -InstanceId $id -Force | out-null
         $thisInstanceRecord = ($instances.Select("id = '$id'"))
-        $thisInstanceRecord["status"] = "terminated"
-        $thisInstanceRecord["state"] = "terminated"
+        $thisInstanceRecord[0]["status"] = "terminated"
+        $thisInstanceRecord[0]["state"] = "terminated"
         Write-Output "        Removing Octopus Target for $ip."
         Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -apiKey $octoApiKey                 
     }
