@@ -378,7 +378,7 @@ while ($numRequiredInstances -ne $numReadyInstances){
     }
     $counter++
 
-    $numReadyInstances = (($instances | Where-Object { $_.status -like "ready*" }).id.length)
+    $numReadyInstances = @(($instances | Where-Object { $_.status -like "ready*" }).id).length
     
     if (($counter % 30) -eq 0){
         Write-Output "$time seconds |  $numReadyInstances / $numRequiredInstances instances are ready. Still polling for updates every 2 seconds..." 
