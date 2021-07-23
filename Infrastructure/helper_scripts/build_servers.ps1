@@ -128,7 +128,7 @@ ForEach ($instance in $existingSqlInstances){
     $public_ip = $instance.PublicIpAddress
     $role = "Web Server"
     $status = (Get-EC2Tag -Filter @{Name="resource-id";Values=$id},@{Name="key";Values="StartupStatus"}).Value
-    [void]$instances.Rows.Add($instanceId,$state,$public_ip,"SQL Server",$status)
+    [void]$instances.Rows.Add($id,$state,$public_ip,"SQL Server",$status)
 }
 ForEach ($instance in $existingJumpInstances){
     $id = $instance.id
@@ -136,7 +136,7 @@ ForEach ($instance in $existingJumpInstances){
     $public_ip = $instance.PublicIpAddress
     $role = "Web Server"
     $status = (Get-EC2Tag -Filter @{Name="resource-id";Values=$id},@{Name="key";Values="StartupStatus"}).Value
-    [void]$instances.Rows.Add($instanceId,$state,$public_ip,"DB Jumpbox",$status)
+    [void]$instances.Rows.Add($id,$state,$public_ip,"DB Jumpbox",$status)
 }
 ForEach ($instance in $existingWebInstances){
     $id = $instance.id
@@ -144,7 +144,7 @@ ForEach ($instance in $existingWebInstances){
     $public_ip = $instance.PublicIpAddress
     $role = "Web Server"
     $status = (Get-EC2Tag -Filter @{Name="resource-id";Values=$id},@{Name="key";Values="StartupStatus"}).Value
-    [void]$instances.Rows.Add($instanceId,$state,$public_ip,"Web Server",$status)
+    [void]$instances.Rows.Add($id,$state,$public_ip,"Web Server",$status)
 }
 
 Write-output $instances
