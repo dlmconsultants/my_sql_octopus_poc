@@ -353,9 +353,9 @@ $counter = 1
 Write-Output "$time seconds | begin polling for updates every 2 seconds..." 
 
 $numTotalInstances = $instances.id.length 
-$numTerminatedInstances = (($instances | Where-Object { $_.status -like "terminated" }).id.length)
+$numTerminatedInstances = @(($instances | Where-Object { $_.status -like "terminated" }).id).length
 $numRequiredInstances = $numTotalInstances - $numTerminatedInstances
-$numReadyInstances = (($instances | Where-Object { $_.status -like "ready*" }).id.length)
+$numReadyInstances = @(($instances | Where-Object { $_.status -like "ready*" }).id).length
 
 # Now we wait in a holding pattern until all instances have a status of either "ready*", or "terminated"
 while ($numRequiredInstances -ne $numReadyInstances){
@@ -381,7 +381,7 @@ while ($numRequiredInstances -ne $numReadyInstances){
     $numReadyInstances = (($instances | Where-Object { $_.status -like "ready*" }).id.length)
     
     if (($counter % 30) -eq 0){
-        Write-Output "$time seconds | $numRequiredInstances / $numReadyInstances instances are ready. Still polling for updates every 2 seconds..." 
+        Write-Output "$time seconds |  $numReadyInstances / $numRequiredInstances instances are ready. Still polling for updates every 2 seconds..." 
     }
 
     if ($time -gt 1500){
