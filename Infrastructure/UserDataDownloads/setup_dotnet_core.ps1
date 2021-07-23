@@ -43,6 +43,12 @@ else {
     Write-Output "  dotnet core hosting bundle already downloaded to $dotnetHostingBundleInstaller"
 }
 
+if ((test-path $dotnetHostingBundleInstaller) -ne $true) {
+  $errorMessage = "FAILED: Failed to download ASP.NET Core Runtime - Windows Hosting Bundle Installer v$dotnetversion after 10 attempts: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
+
 Write-Output "  Installing ASP.NET Core Runtime (v$dotnetversion) - Windows Hosting Bundle Installer."
 $args = New-Object -TypeName System.Collections.Generic.List[System.String]
 $args.Add("/quiet")
