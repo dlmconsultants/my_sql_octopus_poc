@@ -164,28 +164,28 @@ $deploySql = $false
 $killJump = $false
 
 if ($jumpboxExists -and $sqlExists){
-    Write-Output "      We already have a SQL and Jump server, no need to rebuild either."
+    Write-Output "      We already have a SQL and Jump server. No need to rebuild either."
     $deployJump = $false 
     $deploySql = $false 
     $killJump = $false
 }
 
 if ($jumpboxExists -and (-not $sqlExists)){
-    Write-Output "      We have a jump server, but no SQL Server, no need to kill the old jump and build both new."
+    Write-Output "      We have a jump server, but no SQL Server. Need to kill the old jump and build both new."
     $deployJump = $true
     $deploySql = $true
     $killJump = $true
 }
 
 if ((-not $jumpboxExists) -and $sqlExists){
-    Write-Output "      We have a SQL server, but no Jump Server, need to spawn a new Jump Server."
+    Write-Output "      We have a SQL server, but no Jump Server. Need to spawn a new jump server."
     $deployJump = $true
     $deploySql = $false
     $killJump = $false
 }
 
 if ((-not $jumpboxExists) -and (-not $sqlExists)){
-    Write-Output "      We don't have a SQL server or Jump Server, need to spawn both."
+    Write-Output "      We don't have a SQL Server or a Jump Server. Need to spawn both."
     $deployJump = $true
     $deploySql = $true
     $killJump = $false
