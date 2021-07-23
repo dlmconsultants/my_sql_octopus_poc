@@ -36,6 +36,6 @@ If($Output.Exitcode -Eq 0)
     net start w3svc
 }
 else {
-    Write-HError "`t`t Something went wrong with the installation. Errorlevel: ${Output.ExitCode}"
+    Write-Error "`t`t Something went wrong with the installation. Errorlevel: ${Output.ExitCode}"
     Exit 1
 }
