@@ -122,7 +122,7 @@ $existingJumpInstances = Get-Servers -role "$rolePrefix-DbJumpbox" -environment 
 $existingWebInstances = Get-Servers -role "$rolePrefix-WebServer" -environment $environment -$includePending
 
 ForEach ($instance in $existingSqlInstances){
-    $id = $instance.id
+    $id = $instance.InstanceId
     $state = $instance.state.name.value 
     $public_ip = $instance.PublicIpAddress
     $role = "Web Server"
@@ -130,7 +130,7 @@ ForEach ($instance in $existingSqlInstances){
     [void]$instances.Rows.Add($id,$state,$public_ip,"SQL Server",$status)
 }
 ForEach ($instance in $existingJumpInstances){
-    $id = $instance.id
+    $id = $instance.InstanceId
     $state = $instance.state.name.value 
     $public_ip = $instance.PublicIpAddress
     $role = "Web Server"
@@ -138,7 +138,7 @@ ForEach ($instance in $existingJumpInstances){
     [void]$instances.Rows.Add($id,$state,$public_ip,"DB Jumpbox",$status)
 }
 ForEach ($instance in $existingWebInstances){
-    $id = $instance.id
+    $id = $instance.InstanceId
     $state = $instance.state.name.value 
     $public_ip = $instance.PublicIpAddress
     $role = "Web Server"
