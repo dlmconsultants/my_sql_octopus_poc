@@ -60,10 +60,10 @@ Get-Script -script "validate_secrets.ps1"
 Update-StatupStatus -status "setup-1/5-validatingSecrets"
 Write-Output "Executing ./validate_secrets.ps1 -octopusUrl __OCTOPUSURL__"
 try {
-  ./validate_secrets.ps1 -octopusUrl "__OCTOPUSURL__"
+  ./validate_secrets.ps1 -octopusUrl __OCTOPUSURL__
 }
 catch {
-  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./validate_secrets.ps1 -octopusUrl "__OCTOPUSURL__". Last error code was: $Error[0]"
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./validate_secrets.ps1 -octopusUrl __OCTOPUSURL__. Last error code was: $Error[0]"
   Update-StatupStatus -status $errorMessage
   Write-Error $errorMessage
 }
