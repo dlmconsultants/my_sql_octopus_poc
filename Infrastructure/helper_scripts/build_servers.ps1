@@ -353,7 +353,7 @@ $counter = 1
 Write-Output "$time seconds | begin polling for updates every 2 seconds..." 
 
 # Now we wait in a holding pattern until all instances have a status of either "ready*", or "terminated"
-while (($instances.length) -ne (($instances | Where-Object { $_.status -like "ready*" }).length) + ($instances | Where-Object { $_.status -like "terminated" }).length)){
+while (($instances.length) -ne ((($instances | Where-Object { $_.status -like "ready*" }).length) + (($instances | Where-Object { $_.status -like "terminated" }).length))){
     Start-Sleep -s 2
     $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
     foreach ($instanceId in $instances.id) {
