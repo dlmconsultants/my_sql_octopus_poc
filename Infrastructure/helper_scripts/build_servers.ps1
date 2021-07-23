@@ -288,7 +288,7 @@ While ("pending" -in $instances.state){
 
 $sqlIp = ($instances.Select("role = 'SQL Server'")).public_ip
 
-Write-Output "      SQL IP{ address is $sqlIp"
+Write-Output "      SQL IP address is $sqlIp"
 
 if($deployJump){
     Write-Output "    Launching DB Jumpbox with commend: Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData ***"
@@ -383,7 +383,7 @@ while ($numRequiredInstances -ne $numReadyInstances){
     if (($counter % 30) -eq 0){
         Write-Output "$time seconds | $numRequiredInstances / $numReadyInstances instances are ready. Still polling for updates every 2 seconds..." 
     }
-    
+
     if ($time -gt 1500){
         Write-Error "Timed out at $time seconds. It shouldn't take this long. Compare expected times to the actual times for a hint at whether/where the process failed."
     }
