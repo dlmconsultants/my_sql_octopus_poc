@@ -352,10 +352,10 @@ $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
 $counter = 1
 Write-Output "$time seconds | begin polling for updates every 2 seconds..." 
 
-$numTotalInstances = ($instances.length) 
-$numTerminatedInstances = (($instances | Where-Object { $_.status -like "terminated" }).length)
+$numTotalInstances = $instances.id.length 
+$numTerminatedInstances = (($instances | Where-Object { $_.status -like "terminated" }).id.length)
 $numRequiredInstances = $numTotalInstances - $numTerminatedInstances
-$numReadyInstances = (($instances | Where-Object { $_.status -like "ready*" }).length)
+$numReadyInstances = (($instances | Where-Object { $_.status -like "ready*" }).id.length)
 
 # Now we wait in a holding pattern until all instances have a status of either "ready*", or "terminated"
 while ($numRequiredInstances -ne $numReadyInstances){
@@ -378,7 +378,7 @@ while ($numRequiredInstances -ne $numReadyInstances){
     }
     $counter++
 
-    $numReadyInstances = (($instances | Where-Object { $_.status -like "ready*" }).length)  
+    $numReadyInstances = (($instances | Where-Object { $_.status -like "ready*" }).id.length)
     
     if (($counter % 30) -eq 0){
         Write-Output "$time seconds | $numRequiredInstances / $numReadyInstances instances are ready. Still polling for updates every 2 seconds..." 
