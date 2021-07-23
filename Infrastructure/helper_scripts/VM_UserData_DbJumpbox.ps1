@@ -59,14 +59,28 @@ Write-Output "*** $date ***"
 Get-Script -script "validate_secrets.ps1"
 Update-StatupStatus -status "setup-1/5-validatingSecrets"
 Write-Output "Executing ./validate_secrets.ps1 -octopusUrl __OCTOPUSURL__"
-./validate_secrets.ps1 -octopusUrl __OCTOPUSURL__
+try {
+  ./validate_secrets.ps1 -octopusUrl __OCTOPUSURL__
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./validate_secrets.ps1 -octopusUrl __OCTOPUSURL__. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_users.ps1"
 Write-Output "Executing ./setup_users.ps1"
 Update-StatupStatus -status "setup-2/5-CreatingLocalUsers"
-./setup_users.ps1
+try {
+  ./setup_users.ps1
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./setup_users.ps1. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 $octopusServerUrl = "__OCTOPUSURL__"
 $registerInEnvironments = "__ENV__"
@@ -78,7 +92,14 @@ Write-Output "*** $date ***"
 Get-Script -script "install_tentacle.ps1"
 Update-StatupStatus -status "setup-3/5-InstallingTentacle"
 Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
-./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
+try {
+  ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 # Installing tentacle changes the location so switching it back
 set-location "$startupDir\$scriptsDir"
@@ -89,7 +110,14 @@ Write-Output "*** $date ***"
 Get-Script -script "setup_sql_server.ps1"
 Update-StatupStatus -status "setup-4/5-SettingUpSqlServer... (WaitingForSqlServerToStart)"
 Write-Output "Executing ./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp"
-./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp
+try {
+  ./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./setup_sql_server.ps1 -tag $registerInRoles -value $registerInEnvironments -SQLServer $sqlServerIp. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 # Taking the opportunity to install a few useful PowerShell modules
 $date = Get-Date
@@ -97,7 +125,14 @@ Write-Output "*** $date ***"
 Get-Script -script "install_jumpbox_ps_modules.ps1"
 Update-StatupStatus -status "ready-convenience1/3-PreInstallingDbDeploymentModules"
 Write-Output "Executing ./install_jumpbox_ps_modules.ps1"
-./install_jumpbox_ps_modules.ps1
+try {
+  ./install_jumpbox_ps_modules.ps1
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./install_jumpbox_ps_modules.ps1. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 # Installing SSMS for convenience (with Chocolatey). Not required to deploy anything so doing this last to avoid delays.
 $date = Get-Date
@@ -105,14 +140,28 @@ Write-Output "*** $date ***"
 Get-Script -script "install_choco.ps1"
 Update-StatupStatus -status "ready-convenience2/3-InstallingChoco"
 Write-Output "Executing ./install_choco.ps1"
-./install_choco.ps1
+try {
+  ./install_choco.ps1
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./install_choco.ps1. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "install_ssms.ps1"
 Update-StatupStatus -status "ready-convenience3/3-InstallingSSMS"
 Write-Output "Executing ./install_ssms.ps1"
-./install_ssms.ps1
+try {
+  ./install_ssms.ps1
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./install_ssms.ps1. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 Update-StatupStatus -status "ready"
 

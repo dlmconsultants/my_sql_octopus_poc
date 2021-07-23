@@ -59,28 +59,56 @@ Write-Output "*** $date ***"
 Get-Script -script "validate_secrets.ps1"
 Update-StatupStatus -status "setup-1/5-validatingSecrets"
 Write-Output "Executing ./validate_secrets.ps1 -octopusUrl __OCTOPUSURL__"
-./validate_secrets.ps1 -octopusUrl "__OCTOPUSURL__"
+try {
+  ./validate_secrets.ps1 -octopusUrl "__OCTOPUSURL__"
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./validate_secrets.ps1 -octopusUrl "__OCTOPUSURL__". Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_users.ps1"
 Update-StatupStatus -status "setup-2/5-CreatingLocalUsers"
 Write-Output "Executing ./setup_users.ps1"
-./setup_users.ps1
+try {
+  ./setup_users.ps1
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./setup_users.ps1. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_iis.ps1"
 Update-StatupStatus -status "setup-3/5-SettingUpIIS"
 Write-Output "Executing ./setup_iis.ps1"
-./setup_iis.ps1
+try {
+  ./setup_iis.ps1
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./setup_iis.ps1. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 $date = Get-Date
 Write-Output "*** $date ***"
 Get-Script -script "setup_dotnet_core.ps1"
 Update-StatupStatus -status "setup-4/5-SettingUpDotNetCore"
 Write-Output "Executing ./setup_dotnet_core.ps1"
-./setup_dotnet_core.ps1
+try {
+  ./setup_dotnet_core.ps1
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./setup_dotnet_core.ps1. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 $octopusServerUrl = "__OCTOPUSURL__"
 $registerInEnvironments = "__ENV__"
@@ -91,7 +119,14 @@ Write-Output "*** $date ***"
 Get-Script -script "install_tentacle.ps1"
 Update-StatupStatus -status "setup-5/5-SettingUpTentacle"
 Write-Output "Executing ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments" -registerInRoles $registerInRoles
-./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
+try {
+  ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./install_tentacle.ps1 -octopusServerUrl $octopusServerUrl -registerInEnvironments $registerInEnvironments -registerInRoles $registerInRoles. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 Update-StatupStatus -status "ready"
 

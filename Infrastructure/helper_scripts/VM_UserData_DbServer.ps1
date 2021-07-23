@@ -59,7 +59,14 @@ Write-Output "*** $date ***"
 Get-Script -script "validate_secrets.ps1"
 Update-StatupStatus -status "setup-1/5-validatingSecrets"
 Write-Output "Executing ./validate_secrets.ps1 -octopusUrl __OCTOPUSURL__"
-./validate_secrets.ps1 -octopusUrl "__OCTOPUSURL__"
+try {
+  ./validate_secrets.ps1 -octopusUrl __OCTOPUSURL__
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./validate_secrets.ps1 -octopusUrl __OCTOPUSURL__. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 # Setting up users first, so that if anything goes wrong later, folks can RDP in to troubleshoot
 $date = Get-Date
@@ -67,7 +74,14 @@ Write-Output "*** $date ***"
 Get-Script -script "setup_users.ps1"
 Update-StatupStatus -status "setup-2/4-CreatingLocalUsers"
 Write-Output "Executing ./setup_users.ps1"
-./setup_users.ps1
+try {
+  ./setup_users.ps1
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./setup_users.ps1. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 # Chocolatey is required for both SQL Server and SSMS installs
 $date = Get-Date
@@ -75,7 +89,15 @@ Write-Output "*** $date ***"
 Get-Script -script "install_choco.ps1"
 Update-StatupStatus -status "setup-3/4-InstallingChoco"
 Write-Output "Executing ./install_choco.ps1"
-./install_choco.ps1
+try {
+  ./install_choco.ps1
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./install_choco.ps1. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
+
 
 # Installing SQL Server, using a specific config file
 $date = Get-Date
@@ -85,7 +107,14 @@ Get-Script -script "ConfigurationFile.ini"
 Get-Script -script "install_sql_server.ps1"
 Update-StatupStatus -status "setup-4/4-InstallingSqlServer"
 Write-Output "Executing ./install_sql_server.ps1"
-./install_sql_server.ps1
+try {
+  ./install_sql_server.ps1
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./install_sql_server.ps1. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 # Installing SSMS for convenience. Not required to deploy anything so doing this last to avoid delays.
 $date = Get-Date
@@ -93,7 +122,14 @@ Write-Output "*** $date ***"
 Get-Script -script "install_ssms.ps1"
 Update-StatupStatus -status "ready-convenience1/1-InstallingSSMS"
 Write-Output "Executing ./install_ssms.ps1"
-./install_ssms.ps1
+try {
+  ./install_ssms.ps1
+}
+catch {
+  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./install_ssms.ps1. Last error code was: $Error[0]"
+  Update-StatupStatus -status $errorMessage
+  Write-Error $errorMessage
+}
 
 Update-StatupStatus -status "ready"
 
