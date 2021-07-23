@@ -156,7 +156,7 @@ if ("DB Jumpbox" -in $instances.role){
     $jumpboxExists = $true
 }
 $sqlExists = $false
-if ("SQL Server" -notin $instances.role){
+if ("SQL Server" -in $instances.role){
     $sqlExists = $true
 }
 
