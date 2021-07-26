@@ -7,7 +7,7 @@ Function Update-StatupStatus {
     
     # Tag values can be max 256 chars
     if ($status.length -gt 255){
-        $status = $newStatus.SubString(0,213) + " ... (see log in c:/startupfor full error)" # additional string is 42 chars. 213 + 42 = 255
+        $status = $status.SubString(0,213) + " ... (see log in c:/startupfor full error)" # additional string is 42 chars. 213 + 42 = 255
     }
   
     # Add new StartupStatus tag
