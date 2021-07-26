@@ -105,9 +105,27 @@ try {
   ./setup_dotnet_core.ps1
 }
 catch {
-  $errorMessage = "FAILED: VMUserData script failed when trying to run: ./setup_dotnet_core.ps1. Last error code was: $Error[0]"
-  Update-StatupStatus -status $errorMessage
-  Write-Error $errorMessage
+  Write-Output "*** $date ***"
+  Write-Warning "First attempt to setup dotnet core failed: $Error[0]"
+  Write-Output "Trying again" 
+  Update-StatupStatus -status "setup-4/5-SettingUpDotNetCore-2ndTry"
+  try {
+    ./setup_dotnet_core.ps1
+  }
+  catch {
+    Write-Output "*** $date ***"
+    Write-Warning "Second attempt to setup dotnet core failed: $Error[0]"
+    Write-Output "Trying again" 
+    Update-StatupStatus -status "setup-4/5-SettingUpDotNetCore-3rdTry"
+    try {
+      ./setup_dotnet_core.ps1
+    }
+    catch {
+      $errorMessage = "FAILED: VMUserData script failed 3 times when trying to run: ./setup_dotnet_core.ps1. Last error code was: $Error[0]"
+      Update-StatupStatus -status $errorMessage
+      Write-Error $errorMessage
+    }
+  }
 }
 
 $octopusServerUrl = "__OCTOPUSURL__"
