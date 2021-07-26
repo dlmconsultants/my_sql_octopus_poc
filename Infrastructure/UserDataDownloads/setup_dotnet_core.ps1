@@ -25,7 +25,6 @@ if ((test-path $dotnetHostingBundleInstaller) -ne $true) {
       # Apparently this download can sometimes be a bit flakey. Sometimes hitting a 404.
       $oopsie = $Error[0]
       Write-Warning "FAILED: Failed to download ASP.NET Core Runtime - Windows Hosting Bundle Installer v$dotnetversion. Error: $oopsie"
-      }
     }    
 }
 else {
