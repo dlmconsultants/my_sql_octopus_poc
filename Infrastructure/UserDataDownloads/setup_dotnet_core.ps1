@@ -23,19 +23,8 @@ if ((test-path $dotnetHostingBundleInstaller) -ne $true) {
     }
     catch {
       # Apparently this download can sometimes be a bit flakey. Sometimes hitting a 404.
-      Write-Warning "First attempt to download dotnet core failed with error: $Error[0]"
-      Write-output "Trying 10 more times..."
-      for ($i = 1; $i -lt 11; $i++){
-        Start-Sleep 1
-        Write-output "Attempte $i / 10"
-        try {
-          Download-File -url $dotnetUrl -SaveAs $dotnetHostingBundleInstaller 
-          Write-Output "worked this time"
-          break
-        }
-        catch {
-          Write-Output "failed"
-        }  
+      $oopsie = $Error[0]
+      Write-Warning "FAILED: Failed to download ASP.NET Core Runtime - Windows Hosting Bundle Installer v$dotnetversion. Error: $oopsie"
       }
     }    
 }
@@ -44,7 +33,8 @@ else {
 }
 
 if ((test-path $dotnetHostingBundleInstaller) -ne $true) {
-  $errorMessage = "FAILED: Failed to download ASP.NET Core Runtime - Windows Hosting Bundle Installer v$dotnetversion after 10 attempts: $Error[0]"
+  $oopsie = $Error[0] 
+  $errorMessage = "FAILED: Failed to download ASP.NET Core Runtime - Windows Hosting Bundle Installer v$dotnetversion. Error: $oopsie"
   Update-StatupStatus -status $errorMessage
   Write-Error $errorMessage
 }
