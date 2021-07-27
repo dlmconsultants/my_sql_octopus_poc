@@ -369,9 +369,10 @@ $counter = 1
 Write-Output "        $time seconds | begin polling for updates every 2 seconds..." 
 
 $numReadyInstances = ($instances | Where-Object {$_.status -like "ready*"}).id.count
+$numRequiredInstances = $instances.id.length
 
 # Now we wait in a holding pattern until all instances have a status of either "ready*", or "terminated"
-while ($numReadyInstances -lt $instances.id.length){
+while ($numReadyInstances -lt $numRequiredInstances){
     Start-Sleep -s 2
     $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
     foreach ($instanceId in $instances.id) {
@@ -400,6 +401,7 @@ while ($numReadyInstances -lt $instances.id.length){
         Write-Error "Timed out at $time seconds. It shouldn't take this long. Compare expected times to the actual times for a hint at whether/where the process failed."
     }
 }
+Write-Output "All instances are ready."
 
 ##########     7. Final checks      #######################################
 
