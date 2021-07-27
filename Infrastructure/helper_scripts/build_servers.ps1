@@ -269,7 +269,7 @@ if($webServersToStart -gt 0){
     }
 }
 if($deploySql){
-    Write-Output "    Launching SQL Server with commend: Start-Servers -role $dbServerRole -ami $ami -environment $environment -encodedUserData ***"
+    Write-Output "    Launching SQL Server with command: Start-Servers -role $dbServerRole -ami $ami -environment $environment -encodedUserData ***"
     $sqlServerIds = Start-Servers -role $dbServerRole -ami $ami -environment $environment -encodedUserData $dbServerUserData
     ForEach ($instanceId in $sqlServerIds){
         [void]$instances.Rows.Add($instanceId,"Pending","unassigned","SQL Server","")
@@ -309,7 +309,7 @@ $sqlIp = ($instances.Select("role = 'SQL Server'")).public_ip
 Write-Output "      SQL IP address is $sqlIp"
 
 if($deployJump){
-    Write-Output "    Launching DB Jumpbox with commend: Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData ***"
+    Write-Output "    Launching DB Jumpbox with command: Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData ***"
     $jumpServerUserData = Get-UserData -fileName "VM_UserData_DbJumpbox.ps1" -octoUrl $octoUrl -role $dbJumpboxRole -sql_ip $sqlIp -environment $environment -octopusSqlPassword $octopusSqlPassword
     $jumpboxIds = Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData $jumpServerUserData  
     ForEach ($instanceId in $jumpboxIds){
