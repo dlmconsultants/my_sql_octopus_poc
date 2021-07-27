@@ -422,7 +422,9 @@ ForEach ($dbJumpbox in $dbJumpboxes){
     $ip = $dbJumpbox.public_ip
     Write-Output "  DB Jumpbox $id at $ip..."
     Write-Output "    Checking tentacle is configured correctly."
-    Test-Tentacle -ip $ip -octoUrl $octoUrl -apiKey $octoApiKey
+    if (-not (Test-Tentacle -ip $ip -octoUrl $octoUrl -apiKey $octoApiKey)){
+        Write-Warning "      Uh oh: It doesn't look like the tentacle registered with Octopus? Double-check the Infrastucture tab and look for a tentacle at $ip."
+    }
     Write-Output "    Upgrading Calamari on tentacle."
     Update-Calamari -ip $ip -OctopusUrl $octoUrl -ApiKey $octoApiKey
 }
