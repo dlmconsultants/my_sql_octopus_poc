@@ -114,7 +114,7 @@ $instances = New-Object System.Data.Datatable
 [void]$instances.Columns.Add("status")
 
 function Get-InstancesString (){
-    $instancesString = "          INSTANCES:"
+    $instancesString = "INSTANCES:"
     ForEach ($instance in $instances){
         $id = $instance.id
         $role = $instance.role
@@ -123,7 +123,7 @@ function Get-InstancesString (){
         $status = $instance.status
         $instancesString = @"
 $instancesString
-          id: $id / role: $role / state: $state / ip: $ip / status: $status
+id: $id / role: $role / state: $state / ip: $ip / status: $status
 "@
     }
     return $instancesString
