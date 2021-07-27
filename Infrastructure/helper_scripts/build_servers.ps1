@@ -401,7 +401,11 @@ while ($numReadyInstances -lt $numRequiredInstances){
     $numReadyInstances = ($instances | Where-Object {$_.status -like "ready*"}).id.count
     
     if (($counter % 30) -eq 0){
-        Write-Output "        $time seconds |   $numReadyInstances / $numRequiredInstances instances are ready. Still polling for updates every 2 seconds..." 
+        Write-Output "        $time seconds |   $numReadyInstances / $numRequiredInstances instances are ready. Still polling for updates every 2 seconds..."
+        
+        # Temporarily adding this logging to see if I can work out why terminated instances are being included in numReadyInstances
+        $readyInstances = ($instances | Where-Object {$_.status -like "ready*"}).id
+        Write-output "Instances that are ready: $readyInstances"
     }
 
     if ($time -gt 1500){
