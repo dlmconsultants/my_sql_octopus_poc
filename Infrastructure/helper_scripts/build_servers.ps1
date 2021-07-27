@@ -114,7 +114,7 @@ $instances = New-Object System.Data.Datatable
 [void]$instances.Columns.Add("status")
 
 function Get-InstancesString (){
-    $instancesString = ""
+    $instancesString = "          INSTANCES:"
     ForEach ($instance in $instances){
         $id = $instance.id
         $role = $instance.role
@@ -123,7 +123,7 @@ function Get-InstancesString (){
         $status = $instance.status
         $instancesString = @"
 $instancesString
-id: $id / role: $role / state: $state / ip: $ip / status: $status
+          id: $id / role: $role / state: $state / ip: $ip / status: $status
 "@
     }
     return $instancesString
@@ -292,7 +292,7 @@ While ("pending" -in $instances.state){
         $filter = @( @{Name="instance-id";Values=$instanceId} )
         $currentStatus = (Get-EC2Instance -Filter $filter).Instances
         if($currentStatus.state.name.value -like "running"){
-            Write-Output "Instance $instanceId has started"
+            Write-Output "        Instance $instanceId has started"
             $instance["public_ip"] = $currentStatus.PublicIpAddress
             $instance["state"] = $currentStatus.state.name.value            
         }
@@ -328,7 +328,7 @@ While ("pending" -in $instances.state){
         $filter = @( @{Name="instance-id";Values=$instanceId} )
         $currentStatus = (Get-EC2Instance -Filter $filter).Instances
         if($currentStatus.state.name.value -like "running"){
-            Write-Output "Instance $instanceId has started"
+            Write-Output "        Instance $instanceId has started"
             $instance["public_ip"] = $currentStatus.PublicIpAddress
             $instance["state"] = $currentStatus.state.name.value            
         }
@@ -370,7 +370,7 @@ Write-Output "      (If it's taking significantly longer, review the log at C:/s
 
 $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
 $counter = 1
-Write-Output "$time seconds | begin polling for updates every 2 seconds..." 
+Write-Output "        $time seconds | begin polling for updates every 2 seconds..." 
 
 $numTotalInstances = $instances.id.length 
 $numTerminatedInstances = ($instances.Select("status = 'terminated'")).count
@@ -388,7 +388,7 @@ while ($numRequiredInstances -ne $numReadyInstances){
             $thisVm = ($instances.Select("id = '$instanceId'"))
             $thisVm[0]["status"] = $currentStatus
             $role = ($instances.Select("id = '$instanceId'")).role
-            Write-output "$time seconds | $role $instanceId is now in state: $currentStatus"
+            Write-output "        $time seconds | $role $instanceId is now in state: $currentStatus"
         }
         if ($currentStatus -like "*FAILED*"){
             Write-Warning "Uh oh, something went wrong with $instanceId. Status is: $currentStatus"
@@ -402,7 +402,7 @@ while ($numRequiredInstances -ne $numReadyInstances){
     $numReadyInstances = ($instances | Where-Object {$_.status -like "ready*"}).id.count
     
     if (($counter % 30) -eq 0){
-        Write-Output "$time seconds |  $numReadyInstances / $numRequiredInstances instances are ready. Still polling for updates every 2 seconds..." 
+        Write-Output "        $time seconds |   $numReadyInstances / $numRequiredInstances instances are ready. Still polling for updates every 2 seconds..." 
     }
 
     if ($time -gt 1500){
