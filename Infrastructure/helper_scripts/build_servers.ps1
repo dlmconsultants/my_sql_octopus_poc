@@ -300,6 +300,7 @@ if($deployJump){
 }
 
 ##########     6. Waiting until everything comes back online     ##########
+##########     7. Final checks      #######################################
 
 $startTime = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
 While ("pending" -in $instances.state){
@@ -389,21 +390,23 @@ while ($numRequiredInstances -ne $numReadyInstances){
     }
 }
 
+##########     7. Final checks      #######################################
+
 Write-Output "Completing a few final checks"
 $webServers = ($instances | Where-Object {($_.role -like "Web Server") -and ($_.status -like "ready*")})
 $dbJumpboxes = ($instances | Where-Object {($_.role -like "DB Jumpbox") -and ($_.status -like "ready*")})
 
-ForEach ($webServer in $dbJumpboxes){
+ForEach ($dbJumpbox in $dbJumpboxes){
     Write-Output "  Final checks for DB Jumpbox $id at $ip..."
-    $id = $dbJumpboxes.id
-    $ip = $dbJumpboxes.public_ip
+    $id = $dbJumpbox.id
+    $ip = $dbJumpbox.public_ip
     Write-Output "    Checking tentacle is configured correctly."
     Test-Tentacle -ip $ip -octoUrl $octoUrl -apiKey $octoApiKey
     Write-Output "    Upgrading Calamari on tentacle."
     Update-Calamari -ip $ip -OctopusUrl $octoUrl -ApiKey $octoApiKey
 }
 
-ForEach ($webServer in $webServerIpAddresses){
+ForEach ($webServer in $webServers){
     Write-Output "  Final checks for Web Server $id at $ip..."
     $id = $webServer.id
     $ip = $webServer.public_ip
