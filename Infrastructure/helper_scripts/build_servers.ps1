@@ -89,7 +89,6 @@ if ($octopusSqlPassword -like ""){
     catch {
         Write-Warning "No octopus password provided for SQL Server. Skipping check to see if/when SQL Server comes online"
         [SecureString]$octopusSqlPassword = "The wrong password!" | ConvertTo-SecureString -AsPlainText -Force # Need to convert to secure string to avoid errors
-        $checkSql = $false
     }
 }
 else {
@@ -235,11 +234,10 @@ if ($killJump){
         $ip = $jumpServer.PublicIpAddress 
         Write-Output "        Removing EC2 instance $id at $ip."
         Remove-EC2Instance -InstanceId $id -Force | out-null
-        $thisInstanceRecord = ($instances.Select("id = '$id'"))
-        $thisInstanceRecord[0]["status"] = "terminated"
-        $thisInstanceRecord[0]["state"] = "terminated"
         Write-Output "        Removing Octopus Target for $ip."
-        Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -apiKey $octoApiKey                
+        Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -apiKey $octoApiKey
+        # Removing terminated instance from the $instances datatable
+        $instances.Select("id = '$id'").Delete()                
     }
 }
 if ($webServersToKill -gt 0){
@@ -250,11 +248,10 @@ if ($webServersToKill -gt 0){
         $ip = $webServers[$i].PublicIpAddress 
         Write-Output "        Removing EC2 instance $id at $ip."
         Remove-EC2Instance -InstanceId $id -Force | out-null
-        $thisInstanceRecord = ($instances.Select("id = '$id'"))
-        $thisInstanceRecord[0]["status"] = "terminated"
-        $thisInstanceRecord[0]["state"] = "terminated"
         Write-Output "        Removing Octopus Target for $ip."
-        Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -apiKey $octoApiKey                 
+        Remove-OctopusMachine -octoUrl $octoUrl -ip $ip -apiKey $octoApiKey
+        # Removing terminated instance from the $instances datatable
+        $instances.Select("id = '$id'").Delete()                  
     }
 }
 
@@ -371,22 +368,17 @@ $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
 $counter = 1
 Write-Output "        $time seconds | begin polling for updates every 2 seconds..." 
 
-$numTotalInstances = $instances.id.length 
-$numTerminatedInstances = ($instances.Select("status = 'terminated'")).count
-$numRequiredInstances = $numTotalInstances - $numTerminatedInstances
 $numReadyInstances = ($instances | Where-Object {$_.status -like "ready*"}).id.count
 
 # Now we wait in a holding pattern until all instances have a status of either "ready*", or "terminated"
-while ($numReadyInstances -lt $numRequiredInstances){
+while ($numReadyInstances -lt $instances.id.length){
     Start-Sleep -s 2
     $time = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
     foreach ($instanceId in $instances.id) {
-        $currentStatus = (Get-EC2Tag -Filter @{Name="resource-id";Values=$instanceId},@{Name="key";Values="StartupStatus"}).Value
         $previousStatus = ($instances.Select("id = '$instanceId'")).status
+        $currentStatus = (Get-EC2Tag -Filter @{Name="resource-id";Values=$instanceId},@{Name="key";Values="StartupStatus"}).Value
         if ($currentStatus -notlike $previousStatus ){
-            $thisVm = ($instances.Select("id = '$instanceId'"))
-            $thisVm[0]["status"] = $currentStatus
-            $role = ($instances.Select("id = '$instanceId'")).role
+            $instances | Where-Object {$_.id -like $instanceId} | ForEach-Object {$_.status = $currentStatus}
             Write-output "        $time seconds | $role $instanceId is now in state: $currentStatus"
         }
         if ($currentStatus -like "*FAILED*"){
@@ -402,13 +394,9 @@ while ($numReadyInstances -lt $numRequiredInstances){
     
     if (($counter % 30) -eq 0){
         Write-Output "        $time seconds |   $numReadyInstances / $numRequiredInstances instances are ready. Still polling for updates every 2 seconds..."
-        
-        # Temporarily adding this logging to see if I can work out why terminated instances are being included in numReadyInstances
-        $readyInstances = ($instances | Where-Object {$_.status -like "ready*"}).id
-        Write-output "Instances that are ready: $readyInstances"
     }
 
-    if ($time -gt 1500){
+    if ($time -gt $timeout){
         Write-Error "Timed out at $time seconds. It shouldn't take this long. Compare expected times to the actual times for a hint at whether/where the process failed."
     }
 }
