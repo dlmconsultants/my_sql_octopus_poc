@@ -262,14 +262,14 @@ if($webServersToStart -gt 0){
     Write-Output "    Launching Web Server(s) with command: Start-Servers -role $webServerRole -ami $ami -environment $environment -encodedUserData *** -required $numWebServers"
     $webServerIds = Start-Servers -role $webServerRole -ami $ami -environment $environment -encodedUserData $webServerUserData -required $numWebServers   
     ForEach ($instanceId in $webServerIds){
-        [void]$instances.Rows.Add($instanceId,"Pending","unassigned","Web Server","")
+        [void]$instances.Rows.Add($instanceId,"Pending","unassigned","Web Server","booting")
     }
 }
 if($deploySql){
     Write-Output "    Launching SQL Server with command: Start-Servers -role $dbServerRole -ami $ami -environment $environment -encodedUserData ***"
     $sqlServerIds = Start-Servers -role $dbServerRole -ami $ami -environment $environment -encodedUserData $dbServerUserData
     ForEach ($instanceId in $sqlServerIds){
-        [void]$instances.Rows.Add($instanceId,"Pending","unassigned","SQL Server","")
+        [void]$instances.Rows.Add($instanceId,"Pending","unassigned","SQL Server","booting")
     }
     if($deployJump){
         Write-Output "      (Waiting to launch SQL jumpbox server until we have an IP address for SQL Server instance)." 
@@ -310,7 +310,7 @@ if($deployJump){
     $jumpServerUserData = Get-UserData -fileName "VM_UserData_DbJumpbox.ps1" -octoUrl $octoUrl -role $dbJumpboxRole -sql_ip $sqlIp -environment $environment -octopusSqlPassword $octopusSqlPassword
     $jumpboxIds = Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData $jumpServerUserData  
     ForEach ($instanceId in $jumpboxIds){
-        [void]$instances.Rows.Add($instanceId,"Pending","unassigned","DB Jumpbox","")
+        [void]$instances.Rows.Add($instanceId,"Pending","unassigned","DB Jumpbox","booting")
     }
 }
 
