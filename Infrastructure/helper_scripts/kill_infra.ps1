@@ -138,6 +138,10 @@ if ($numOfTargetsToKill -ne 0){
     Write-Output "    Number of remaining targets: $numOfTargetsToKill" 
 }
 
+Write-Output "Remaining AWS resources that are tagged for this project:"
+$remainingTags = Get-EC2Tag  -Filter @{Name="tag:Project";Values="my_sql_octopus_poc"}
+Write-Output $remainingTags
+
 if (($numOfInstancesToKill -ne 0) -or ($numOfTargetsToKill -ne 0)){
     Write-Error "Not all the EC2 instances / Octopus target manchines have been successfully killed."
 }
