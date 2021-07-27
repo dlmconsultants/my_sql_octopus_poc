@@ -318,7 +318,6 @@ if($deployJump){
 }
 
 ##########     6. Waiting until everything comes back online     ##########
-##########     7. Final checks      #######################################
 
 $startTime = [Math]::Floor([decimal]($stopwatch.Elapsed.TotalSeconds))
 While ("pending" -in $instances.state){
