@@ -15,7 +15,7 @@ if (Test-SecretsManagerRoleExists) {
 else {
     Write-Output "    Creating role $roleName with access control policy saved at: $policy"
     try {
-        New-IAMRole -AssumeRolePolicyDocument (Get-Content -raw $policy) -RoleName $roleName -Tag @{ Key="my_sql_octopus_poc"; Value=""} | out-null
+        New-IAMRole -AssumeRolePolicyDocument (Get-Content -raw $policy) -RoleName $roleName -Tag @{ Key="Project"; Value="my_sql_octopus_poc"} | out-null
     }
     catch {
         if (Test-SecretsManagerRoleExists){

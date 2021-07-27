@@ -15,12 +15,12 @@ else {
     # Creates a new security group
     Write-Output "    Creating security group $securityGroupName."
     try {
-        $securityGroup = New-EC2SecurityGroup -GroupName $securityGroupName -Description "Accepts Web, RDP and Octopus traffic from any IP address."
+        $securityGroup = New-EC2SecurityGroup -GroupName $securityGroupName -Description "Accepts Web, RDP, SQL and Octopus traffic from any IP address."
 
         # Tags the security group
         $Tag = New-Object Amazon.EC2.Model.Tag
-        $Tag.Key = "my_sql_octopus_poc"
-        $Tag.Value = ""
+        $Tag.Key = "Project"
+        $Tag.Value = "my_sql_octopus_poc"
         New-EC2Tag -Resource $securityGroup -Tag $Tag
 
         Write-Output "      SecurityGroup $securityGroupName created."
