@@ -432,3 +432,18 @@ function Get-InstanceStatuses{
     }
     return $statuses
 }
+
+function Test-IIS {
+    param (
+        $ip
+    )
+    try { 
+        $content = Invoke-WebRequest -Uri $ip -TimeoutSec 1 -UseBasicParsing
+    }
+    catch {
+        return $false
+    }
+    if ($content.toString() -like "*iisstart.png*"){
+    return $true
+    }
+}
