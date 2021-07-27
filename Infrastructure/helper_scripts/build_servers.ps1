@@ -113,6 +113,22 @@ $instances = New-Object System.Data.Datatable
 [void]$instances.Columns.Add("role")
 [void]$instances.Columns.Add("status")
 
+function Get-InstancesString (){
+    $instancesString = ""
+    ForEach ($instance in $instances){
+        $id = $instance.id
+        $role = $instance.role
+        $state = $instance.state
+        $ip = $instance.public_ip
+        $status = $instance.status
+        $instancesString = @"
+$instancesString
+id: $id / role: $role / state: $state / ip: $ip / status: $status
+"@
+    }
+    return $instancesString
+}
+
 ##########     2. Determine what we already have     ##########
 
 Write-Output "    Checking what infra we already have..."
@@ -146,7 +162,8 @@ ForEach ($instance in $existingWebInstances){
     [void]$instances.Rows.Add($id,$state,$public_ip,"Web Server",$status)
 }
 
-Write-output $instances
+$instancesString = Get-InstancesString
+Write-output $instancesString
 
 Write-Output "    Checking required infrastucture changes..."
 
@@ -262,7 +279,8 @@ if($deploySql){
     }
 }
 
-Write-Output $instances
+$instancesString = Get-InstancesString
+Write-output $instancesString
 
 Write-Output "      Waiting for instances to start... (This normally takes about 30 seconds.)"
 
@@ -322,7 +340,8 @@ While ("pending" -in $instances.state){
     Start-Sleep 2
 }
 
-Write-Output $instances
+$instancesString = Get-InstancesString
+Write-output $instancesString
 
 # So that anyone executing this runbook has a rough idea how long they can expect to wait
 Write-Output "    Waiting for all instances to complete setup..."
@@ -373,7 +392,8 @@ while ($numRequiredInstances -ne $numReadyInstances){
         }
         if ($currentStatus -like "*FAILED*"){
             Write-Warning "Uh oh, something went wrong with $instanceId. Status is: $currentStatus"
-            Write-Output $instances
+            $instancesString = Get-InstancesString
+            Write-output $instancesString
             Write-Error "At least one instance has failed to start up correctly. Review all your EC2 instances and either terminate or fix them, then try again."
         }
     }
@@ -419,4 +439,5 @@ ForEach ($webServer in $webServers){
 }
     
 Write-Output "SUCCESS!"
-Write-Output $instances
+$instancesString = Get-InstancesString
+Write-output $instancesString
