@@ -222,7 +222,7 @@ if ($numExistingWebServers -gt $numWebServers){
 else {
     # We don't have enough web servers. We need to build more.
     $webServersToStart = $numWebServers - $numExistingWebServers
-    Write-Output "      We already have $numExistingWebServers Web Servers but we need $numWebServers. Need to build $webServersToKill more."
+    Write-Output "      We already have $numExistingWebServers Web Servers but we need $numWebServers. Need to build $webServersToStart more."
 }
 
 ##########     3. Removing everything that needs to be deleted     ##########
