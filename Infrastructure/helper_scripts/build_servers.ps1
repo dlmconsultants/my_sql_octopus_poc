@@ -412,14 +412,15 @@ while ($numRequiredInstances -ne $numReadyInstances){
 
 ##########     7. Final checks      #######################################
 
-Write-Output "Completing a few final checks"
+Write-Output "Performing a few final checks for Web Servers and DB Jumpboxes:"
 $webServers = ($instances | Where-Object {($_.role -like "Web Server") -and ($_.status -like "ready*")})
 $dbJumpboxes = ($instances | Where-Object {($_.role -like "DB Jumpbox") -and ($_.status -like "ready*")})
 
 ForEach ($dbJumpbox in $dbJumpboxes){
-    Write-Output "  Final checks for DB Jumpbox $id at $ip..."
+    
     $id = $dbJumpbox.id
     $ip = $dbJumpbox.public_ip
+    Write-Output "  DB Jumpbox $id at $ip..."
     Write-Output "    Checking tentacle is configured correctly."
     Test-Tentacle -ip $ip -octoUrl $octoUrl -apiKey $octoApiKey
     Write-Output "    Upgrading Calamari on tentacle."
@@ -427,17 +428,23 @@ ForEach ($dbJumpbox in $dbJumpboxes){
 }
 
 ForEach ($webServer in $webServers){
-    Write-Output "  Final checks for Web Server $id at $ip..."
     $id = $webServer.id
     $ip = $webServer.public_ip
+    Write-Output "  Web Server $id at $ip..."
     Write-Output "    Checking default IIS page is available."
-    Test-IIS -ip $ip
+    if (-not (Test-IIS -ip $ip)){
+        Write-Warning "      Uh oh: It doesn't look like IIS is running? Try navigating to $ip in a web browser."
+    }
     Write-Output "    Checking tentacle is configured correctly."
-    Test-Tentacle -ip $ip -octoUrl $octoUrl -apiKey $octoApiKey
+    if (-not (Test-Tentacle -ip $ip -octoUrl $octoUrl -apiKey $octoApiKey)){
+        Write-Warning "      Uh oh: It doesn't look like the tentacle registered with Octopus? Double-check the Infrastucture tab and look for a tentacle at $ip."
+    }
     Write-Output "    Upgrading Calamari on tentacle."
     Update-Calamari -ip $ip -OctopusUrl $octoUrl -ApiKey $octoApiKey
 }
     
 Write-Output "SUCCESS!"
+Write-Output "*"
+
 $instancesString = Get-InstancesString
 Write-output $instancesString
