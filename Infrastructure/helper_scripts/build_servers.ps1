@@ -316,7 +316,7 @@ $sqlIp = ($instances.Select("role = 'SQL Server'")).public_ip
 Write-Output "      SQL IP address is $sqlIp"
 
 # Creating an Octopus variable so that deployment projects know where to deploy SQL updates too
-Write-Output "      Creating SQLSERVER_IP Octopus Variable using command: Set-OctopusVariable -octopusUrl $octoUrl -octopusAPIKey $octoApiKey -projectName $projectName -spaceName $octopusSpace -environment $environment -varName ""SQLSERVER_IP"" -varValue $sqlIp"
+Write-Output "      Creating SQLSERVER_IP Octopus Variable using command: Set-OctopusVariable -octopusUrl $octoUrl -octopusAPIKey *** -projectName $projectName -spaceName $octopusSpace -environment $environment -varName ""SQLSERVER_IP"" -varValue $sqlIp"
 Set-OctopusVariable -octopusUrl $octoUrl -octopusAPIKey $octoApiKey -projectName $projectName -spaceName $octopusSpace -environment $environment -varName "SQLSERVER_IP" -varValue $sqlIp
 
 if($deployJump){
