@@ -39,14 +39,14 @@ Write-Output "    Windows_Server-2019-English-Full-Base image in this AWS region
 
 Write-Output "    Auto-filling missing parameters from Octopus System Variables..."
 
-# Role prefix
-$rolePrefix = ""
+# Project name
+$projectName = ""
 try {
-    $rolePrefix = $OctopusParameters["Octopus.Project.Name"]
-    Write-Output "      Detected Octopus Project: $rolePrefix"
+    $projectName = $OctopusParameters["Octopus.Project.Name"]
+    Write-Output "      Detected Octopus Project: $projectName"
 }
 catch {
-    $rolePrefix = "my_sql_octopus_poc"
+    $projectName = "my_sql_octopus_poc"
 }
 
 # Environment Name
@@ -95,10 +95,21 @@ else {
     [SecureString]$octopusSqlPassword = $octopusSqlPassword | ConvertTo-SecureString -AsPlainText -Force # The param should really have been a SecureString to begin with...
 }
 
+
+$octopusSpace = "Default"
+try {
+    $octopusSpace = $OctopusParameters["Octopus.Space.Name"]
+    Write-Output "      Detected Octopus Space: $octopusSpace"
+}
+catch {
+    Write-Warning "Failed to read Octopus Space name from Octopus variables. Assuming default space."
+}
+
+
 # Infering the roles
-$webServerRole = "$rolePrefix-WebServer"
-$dbServerRole = "$rolePrefix-DbServer"
-$dbJumpboxRole = "$rolePrefix-DbJumpbox"
+$webServerRole = "$projectName-WebServer"
+$dbServerRole = "$projectName-DbServer"
+$dbJumpboxRole = "$projectName-DbJumpbox"
 
 # Reading and encoding the VM startup scripts
 $webServerUserData = Get-UserData -fileName "VM_UserData_WebServer.ps1" -octoUrl $octoUrl -role $webServerRole -environment $environment -octopusSqlPassword $octopusSqlPassword
@@ -132,9 +143,9 @@ id: $id / role: $role / state: $state / ip: $ip / status: $status
 
 Write-Output "    Checking what infra we already have..."
 
-$existingSqlInstances = Get-Servers -role "$rolePrefix-DbServer" -environment $environment -$includePending
-$existingJumpInstances = Get-Servers -role "$rolePrefix-DbJumpbox" -environment $environment -$includePending
-$existingWebInstances = Get-Servers -role "$rolePrefix-WebServer" -environment $environment -$includePending
+$existingSqlInstances = Get-Servers -role "$dbServerRole" -environment $environment -$includePending
+$existingJumpInstances = Get-Servers -role "$dbJumpboxRole" -environment $environment -$includePending
+$existingWebInstances = Get-Servers -role "$webServerRole" -environment $environment -$includePending
 
 ForEach ($instance in $existingSqlInstances){
     $id = $instance.InstanceId
@@ -302,8 +313,11 @@ While ("pending" -in $instances.state){
 }
 
 $sqlIp = ($instances.Select("role = 'SQL Server'")).public_ip
-
 Write-Output "      SQL IP address is $sqlIp"
+
+# Creating an Octopus variable so that deployment projects know where to deploy SQL updates too
+Write-Output "      Creating SQLSERVER_IP Octopus Variable using command: Set-OctopusVariable -octopusUrl $octoUrl -octopusAPIKey $octoApiKey -projectName $projectName -spaceName $octopusSpace -environment $environment -varName ""SQLSERVER_IP"" -varValue $sqlIp"
+Set-OctopusVariable -octopusUrl $octoUrl -octopusAPIKey $octoApiKey -projectName $projectName -spaceName $octopusSpace -environment $environment -varName "SQLSERVER_IP" -varValue $sqlIp
 
 if($deployJump){
     Write-Output "    Launching DB Jumpbox with command: Start-Servers -role $dbJumpboxRole -ami $ami -environment $environment -encodedUserData ***"
